@@ -1,6 +1,7 @@
 # @max-health/config
 
-Shared configuration presets for Max Health repositories.
+Shared configuration presets for Max Health repositories.  
+Aligned with latest Vite template (ES2023, erasableSyntaxOnly, flat ESLint config with recommended presets).
 
 ## Install
 
@@ -22,6 +23,8 @@ npm install --save-dev github:max-health-inc/config
   "include": ["src"]
 }
 ```
+
+> Note: `types: ["vite/client"]` is included — no `vite-env.d.ts` file needed!
 
 **tsconfig.node.json:**
 ```json
@@ -83,11 +86,22 @@ export default createViteConfig({
 
 | Config | Key settings |
 |--------|-------------|
-| `tsconfig/app.json` | ES2022, bundler resolution, strict, react-jsx, verbatimModuleSyntax |
-| `tsconfig/node.json` | ES2022, bundler resolution, strict, no jsx |
-| `eslint/react` | typescript-eslint recommended + react-hooks + react-refresh + consistent-type-imports |
+| `tsconfig/app.json` | ES2023, bundler resolution, strict, react-jsx, verbatimModuleSyntax, erasableSyntaxOnly, noUncheckedIndexedAccess, `types: ["vite/client"]` |
+| `tsconfig/node.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, `types: ["node"]` |
+| `eslint/react` | typescript-eslint recommended + `reactHooks.configs.flat.recommended` + `reactRefresh.configs.vite` + consistent-type-imports |
 | `eslint/node` | typescript-eslint recommended + consistent-type-imports |
 | `vite` | react-swc, `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
+
+## Best practice alignment
+
+- **ES2023 target** — matches Vite 6 template (was ES2020/ES2022)
+- **`erasableSyntaxOnly`** — TS 5.8+ requirement for proper type-only erasure in bundlers
+- **`noUncheckedIndexedAccess`** — from tsconfig/bases strictest, catches `obj[key]` without undefined check
+- **`noImplicitOverride`** — enforces `override` keyword on class methods
+- **`types: ["vite/client"]`** — eliminates need for `vite-env.d.ts` in every repo
+- **`globalIgnores()`** — proper flat config API instead of `{ ignores: [] }` object
+- **`reactHooks.configs.flat.recommended`** — official flat config preset (not manual rule spread)
+- **`reactRefresh.configs.vite`** — official preset instead of manual plugin config
 
 ## Customization
 

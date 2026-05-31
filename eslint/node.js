@@ -1,7 +1,7 @@
-import { defineConfig } from 'eslint/config'
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import globals from 'globals'
+import { defineConfig, globalIgnores } from 'eslint/config'
 
 /**
  * Shared ESLint flat config for Node.js + TypeScript projects.
@@ -24,14 +24,17 @@ export function createNodeConfig(options = {}) {
       { argsIgnorePattern: '^_', varsIgnorePattern: '^_', destructuredArrayIgnorePattern: '^_' },
     ],
     '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports', fixStyle: 'inline-type-imports', disallowTypeAnnotations: false }],
+    '@typescript-eslint/consistent-type-imports': [
+      'error',
+      { prefer: 'type-imports', fixStyle: 'inline-type-imports', disallowTypeAnnotations: false },
+    ],
     'eqeqeq': ['error', 'always'],
     'no-var': 'error',
     'prefer-const': 'error',
   }
 
-  return defineConfig(
-    { ignores: ['dist/**', 'node_modules/**', ...ignores] },
+  return defineConfig([
+    globalIgnores(['dist', 'node_modules', ...ignores]),
     {
       files: ['src/**/*.ts', '**/*.ts'],
       extends: [js.configs.recommended, tseslint.configs.recommended],
@@ -40,7 +43,7 @@ export function createNodeConfig(options = {}) {
         'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
       },
       languageOptions: {
-        ecmaVersion: 2022,
+        ecmaVersion: 'latest',
         globals: globals.node,
         parserOptions: {
           tsconfigRootDir,
@@ -48,5 +51,5 @@ export function createNodeConfig(options = {}) {
         },
       },
     },
-  )
+  ])
 }
