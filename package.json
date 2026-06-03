@@ -1,6 +1,6 @@
 {
   "name": "@max-health/config",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Shared configs (tsconfig, eslint, vite) for Max Health repos",
   "type": "module",
   "exports": {
@@ -8,6 +8,7 @@
     "./tsconfig/node.json": "./tsconfig/node.json",
     "./eslint/react": "./eslint/react.js",
     "./eslint/node": "./eslint/node.js",
+    "./eslint/rules": "./eslint/rules.js",
     "./vite": "./vite/index.js"
   },
   "files": ["tsconfig", "eslint", "vite"],
@@ -26,12 +27,8 @@
   "peerDependenciesMeta": {
     "@tailwindcss/vite": { "optional": true },
     "@vitejs/plugin-react-swc": { "optional": true },
-    "eslint": { "optional": true },
     "eslint-plugin-react-hooks": { "optional": true },
     "eslint-plugin-react-refresh": { "optional": true },
-    "globals": { "optional": true },
-    "typescript-eslint": { "optional": true },
-    "@eslint/js": { "optional": true },
     "vite": { "optional": true }
   }
 }
