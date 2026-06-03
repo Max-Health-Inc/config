@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import globals from 'globals'
 import { defineConfig, globalIgnores } from 'eslint/config'
+import { sharedRules, typeCheckedRules as _typeCheckedRules, securityRules as _securityRules } from './rules.js'
 
 /**
  * Shared ESLint flat config for Node.js + TypeScript projects.
@@ -24,49 +25,6 @@ export function createNodeConfig(options = {}) {
     extraRules = {},
   } = options
 
-  const sharedRules = {
-    // Unused variables - error with sensible ignores
-    '@typescript-eslint/no-unused-vars': [
-      'error',
-      { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_', ignoreRestSiblings: true },
-    ],
-    // No any type
-    '@typescript-eslint/no-explicit-any': 'error',
-    // Consistent type imports
-    '@typescript-eslint/consistent-type-imports': [
-      'error',
-      { prefer: 'type-imports', fixStyle: 'inline-type-imports', disallowTypeAnnotations: false },
-    ],
-    // Unused expressions
-    '@typescript-eslint/no-unused-expressions': 'error',
-    // Strict equality
-    'eqeqeq': ['error', 'always', { null: 'ignore' }],
-    // No var declarations
-    'no-var': 'error',
-    // Prefer const over let
-    'prefer-const': 'error',
-    // No console.log in production (allow warn, error, info)
-    'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
-    // No debugger statements
-    'no-debugger': 'error',
-    // No duplicate imports
-    'no-duplicate-imports': 'error',
-  }
-
-  // Type-checked rules (catches async bugs)
-  const typeCheckedRules = typeChecked ? {
-    '@typescript-eslint/no-floating-promises': 'error',
-    '@typescript-eslint/await-thenable': 'error',
-    '@typescript-eslint/no-misused-promises': 'error',
-  } : {}
-
-  // Security rules (backend packages)
-  const securityRules = security ? {
-    'no-eval': 'error',
-    'no-implied-eval': 'error',
-    'no-new-func': 'error',
-  } : {}
-
   return defineConfig([
     globalIgnores(['dist', 'node_modules', '.wrangler', ...ignores]),
     {
@@ -74,8 +32,8 @@ export function createNodeConfig(options = {}) {
       extends: [js.configs.recommended, tseslint.configs.recommended],
       rules: {
         ...sharedRules,
-        ...typeCheckedRules,
-        ...securityRules,
+        ...(typeChecked ? _typeCheckedRules : {}),
+        ...(security ? _securityRules : {}),
         ...extraRules,
       },
       languageOptions: {
