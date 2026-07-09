@@ -34,6 +34,16 @@ npm install --save-dev github:max-health-inc/config
 }
 ```
 
+**tsconfig.json (Cloudflare Worker):**
+```json
+{
+  "extends": "@max-health/config/tsconfig/worker.json",
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}
+```
+
+> Uses `@cloudflare/workers-types` (no DOM libs). Add `@cloudflare/workers-types` to the worker's devDependencies.
+
 **tsconfig.json (root):**
 ```json
 {
@@ -104,6 +114,7 @@ export default createViteConfig({
 |--------|-------------|
 | `tsconfig/app.json` | ES2023, bundler resolution, strict, react-jsx, verbatimModuleSyntax, erasableSyntaxOnly, noUncheckedIndexedAccess, `types: ["vite/client"]` |
 | `tsconfig/node.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, `types: ["node"]` |
+| `tsconfig/worker.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, noUncheckedIndexedAccess, `types: ["@cloudflare/workers-types"]` (no DOM) |
 | `eslint/react` | typescript-eslint recommended + reactHooks + reactRefresh + type-checked rules + consistent-type-imports |
 | `eslint/node` | typescript-eslint recommended + type-checked rules + consistent-type-imports |
 | `vite` | react-swc, `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
