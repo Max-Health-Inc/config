@@ -1,6 +1,6 @@
 {
   "name": "@max-health/config",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Shared configs (tsconfig, eslint, vite) for Max Health repos",
   "type": "module",
   "exports": {
@@ -10,7 +10,10 @@
     "./eslint/react": "./eslint/react.js",
     "./eslint/node": "./eslint/node.js",
     "./eslint/rules": "./eslint/rules.js",
-    "./vite": "./vite/index.js"
+    "./vite": {
+      "types": "./vite/index.d.ts",
+      "default": "./vite/index.js"
+    }
   },
   "files": ["tsconfig", "eslint", "vite"],
   "license": "MIT",

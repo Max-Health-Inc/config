@@ -7,9 +7,13 @@ import path from 'path'
  *
  * @param {object} [options]
  * @param {number} [options.port] - Dev server port (default: 3000)
- * @param {import('vite').Plugin[]} [options.plugins] - Additional Vite plugins
- * @param {Record<string, string>} [options.alias] - Additional resolve aliases
- * @param {object} [options.build] - Additional build options
+ * @param {import('vite').PluginOption[]} [options.plugins] - Additional Vite plugins, appended after the React plugin
+ * @param {Record<string, string>} [options.alias] - Additional or overriding resolve aliases (merged over '@' -> ./src)
+ * @param {import('vite').BuildOptions} [options.build] - Additional build options, merged over the shared defaults
+ * @param {import('vite').ServerOptions} [options.server] - Additional dev-server options, merged over { port }
+ * @param {import('vite').DepOptimizationOptions} [options.optimizeDeps] - Dependency pre-bundling options
+ * @param {Record<string, unknown>} [options.define] - Extra global constant replacements, merged over the production defines
+ * @param {{ format?: 'es' | 'iife' }} [options.worker] - Web worker bundling options
  */
 export function createViteConfig(options = {}) {
   const {
@@ -17,6 +21,10 @@ export function createViteConfig(options = {}) {
     plugins = [],
     alias = {},
     build = {},
+    server = {},
+    optimizeDeps,
+    define = {},
+    worker,
   } = options
 
   return defineConfig(({ command, mode }) => {
@@ -27,14 +35,16 @@ export function createViteConfig(options = {}) {
     return {
       base: process.env.VITE_BASE || '/',
       plugins: [react(), ...plugins],
-      server: { port },
+      server: { port, ...server },
       resolve: {
         alias: {
           '@': path.resolve(process.cwd(), './src'),
           ...alias,
         },
       },
-      define: prodDefines,
+      define: { ...prodDefines, ...define },
+      ...(optimizeDeps ? { optimizeDeps } : {}),
+      ...(worker ? { worker } : {}),
       build: {
         sourcemap: false,
         reportCompressedSize: false,
