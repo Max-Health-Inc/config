@@ -1,7 +1,7 @@
 {
   "name": "@max-health/config",
-  "version": "2.3.0",
-  "description": "Shared configs (tsconfig, eslint, vite) for Max Health repos",
+  "version": "2.4.0",
+  "description": "Shared configs (tsconfig, eslint, vite, vitest) for Max Health repos",
   "type": "module",
   "exports": {
     "./tsconfig/app.json": "./tsconfig/app.json",
@@ -13,9 +13,13 @@
     "./vite": {
       "types": "./vite/index.d.ts",
       "default": "./vite/index.js"
+    },
+    "./vitest": {
+      "types": "./vitest/index.d.ts",
+      "default": "./vitest/index.js"
     }
   },
-  "files": ["tsconfig", "eslint", "vite"],
+  "files": ["tsconfig", "eslint", "vite", "vitest"],
   "license": "MIT",
   "peerDependencies": {
     "@eslint/js": ">=9",
@@ -26,13 +30,15 @@
     "eslint-plugin-react-refresh": ">=0.4",
     "globals": ">=15",
     "typescript-eslint": ">=8",
-    "vite": ">=6"
+    "vite": ">=6",
+    "vitest": ">=2"
   },
   "peerDependenciesMeta": {
     "@tailwindcss/vite": { "optional": true },
     "@vitejs/plugin-react-swc": { "optional": true },
     "eslint-plugin-react-hooks": { "optional": true },
     "eslint-plugin-react-refresh": { "optional": true },
-    "vite": { "optional": true }
+    "vite": { "optional": true },
+    "vitest": { "optional": true }
   }
 }

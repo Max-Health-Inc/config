@@ -108,6 +108,34 @@ export default createViteConfig({
 })
 ```
 
+### Vitest
+
+**vitest.config.ts** — a leaf package needs only its test globs:
+```ts
+import { createVitestConfig } from '@max-health/config/vitest'
+
+export default createVitestConfig()
+```
+
+A repo root that publishes coverage and CI reports opts into both:
+```ts
+import { createVitestConfig } from '@max-health/config/vitest'
+
+export default createVitestConfig({
+  include: ['src/test/**/*.test.{ts,js}'],
+  exclude: ['**/pipelineParity.test.ts'],
+  setupFiles: ['src/test/setup.ts'],
+  fileParallelism: false,       // sequential — avoids cache/file races on Windows
+  coverage: true,               // v8 → test/coverage
+  reports: true,                // html + junit + default → test/
+})
+```
+
+`coverage` and `reports` are opt-in: a leaf package running `vitest run` should not
+have to name an html/junit destination, and repos that do publish them get one
+layout instead of re-deriving it. Pass an object to either for overrides, and
+`test` as a last-resort escape hatch for keys the preset does not model.
+
 ## What's included
 
 | Config | Key settings |
@@ -118,6 +146,22 @@ export default createViteConfig({
 | `eslint/react` | typescript-eslint recommended + reactHooks + reactRefresh + type-checked rules + consistent-type-imports |
 | `eslint/node` | typescript-eslint recommended + type-checked rules + consistent-type-imports |
 | `vite` | react-swc, `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
+| `vitest` | `src/**/*.test.ts` discovery, build-artifact excludes, opt-in v8 coverage and html/junit reports |
+
+## Vitest Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `include` | `['src/**/*.test.ts']` | Test globs |
+| `exclude` | `[]` | Merged over `node_modules/**`, `dist/**`, `out/**`, `**/coverage/**` |
+| `setupFiles` | — | Files run before each test file |
+| `fileParallelism` | vitest default | `false` runs test files sequentially |
+| `testTimeout` / `hookTimeout` | vitest default | Timeouts in ms |
+| `environment` | `node` | `node` \| `jsdom` \| `happy-dom` \| `edge-runtime` |
+| `coverage` | off | `true` for v8 → `test/coverage`, or an object |
+| `reports` | off | `true` for html+junit+default → `test/`, or an object |
+| `viteConfig` | `{}` | Extra Vite-level config (plugins, resolve, …) |
+| `test` | `{}` | Escape hatch merged last over `test` |
 
 ## ESLint Options
 
