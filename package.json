@@ -1,6 +1,6 @@
 {
   "name": "@max-health-inc/config",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Shared configs (tsconfig, eslint, vite, vitest) for Max Health repos",
   "type": "module",
   "repository": {

@@ -49,8 +49,8 @@ jobs:
       - name: Is this version already published?
         id: check
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
         run: |
           NAME=$(node -p "require('./package.json').name")
           VERSION=$(node -p "require('./package.json').version")
@@ -70,8 +70,8 @@ jobs:
         if: steps.check.outputs.published == 'false'
         run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
 
       # Tag the released commit so a registry version is traceable to a commit.
       # Skipped when the tag already exists, which is the case when this run was
