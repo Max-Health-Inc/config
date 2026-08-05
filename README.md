@@ -1,13 +1,23 @@
-# @max-health/config
+# @max-health-inc/config
 
 Shared configuration presets for Max Health repositories.  
 Aligned with latest Vite template (ES2023, erasableSyntaxOnly, flat ESLint config with recommended presets).
 
 ## Install
 
-```bash
-npm install --save-dev github:max-health-inc/config
+Published to GitHub Packages. Add the registry mapping once per consuming repo (`.npmrc`):
+
+```ini
+@max-health-inc:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
 ```
+
+```bash
+npm install --save-dev @max-health-inc/config
+```
+
+`NODE_AUTH_TOKEN` needs `read:packages`. In CI it is the `GH_PACKAGES_TOKEN` secret;
+locally, `gh auth token` works.
 
 ## Usage
 
@@ -16,7 +26,7 @@ npm install --save-dev github:max-health-inc/config
 **tsconfig.app.json:**
 ```json
 {
-  "extends": "@max-health/config/tsconfig/app.json",
+  "extends": "@max-health-inc/config/tsconfig/app.json",
   "compilerOptions": {
     "paths": { "@/*": ["./src/*"] }
   },
@@ -29,7 +39,7 @@ npm install --save-dev github:max-health-inc/config
 **tsconfig.node.json:**
 ```json
 {
-  "extends": "@max-health/config/tsconfig/node.json",
+  "extends": "@max-health-inc/config/tsconfig/node.json",
   "include": ["vite.config.ts"]
 }
 ```
@@ -37,7 +47,7 @@ npm install --save-dev github:max-health-inc/config
 **tsconfig.json (Cloudflare Worker):**
 ```json
 {
-  "extends": "@max-health/config/tsconfig/worker.json",
+  "extends": "@max-health-inc/config/tsconfig/worker.json",
   "include": ["src/**/*.ts", "tests/**/*.ts"]
 }
 ```
@@ -59,7 +69,7 @@ npm install --save-dev github:max-health-inc/config
 
 **eslint.config.js (React):**
 ```js
-import { createReactConfig } from '@max-health/config/eslint/react'
+import { createReactConfig } from '@max-health-inc/config/eslint/react'
 import { fileURLToPath } from 'url'
 import path from 'path'
 
@@ -70,7 +80,7 @@ export default createReactConfig({ tsconfigRootDir: __dirname })
 
 **eslint.config.js (Node.js):**
 ```js
-import { createNodeConfig } from '@max-health/config/eslint/node'
+import { createNodeConfig } from '@max-health-inc/config/eslint/node'
 import { fileURLToPath } from 'url'
 import path from 'path'
 
@@ -99,7 +109,7 @@ export default createNodeConfig({
 
 **vite.config.ts:**
 ```ts
-import { createViteConfig } from '@max-health/config/vite'
+import { createViteConfig } from '@max-health-inc/config/vite'
 import tailwindcss from '@tailwindcss/vite'
 
 export default createViteConfig({
@@ -112,14 +122,14 @@ export default createViteConfig({
 
 **vitest.config.ts** — a leaf package needs only its test globs:
 ```ts
-import { createVitestConfig } from '@max-health/config/vitest'
+import { createVitestConfig } from '@max-health-inc/config/vitest'
 
 export default createVitestConfig()
 ```
 
 A repo root that publishes coverage and CI reports opts into both:
 ```ts
-import { createVitestConfig } from '@max-health/config/vitest'
+import { createVitestConfig } from '@max-health-inc/config/vitest'
 
 export default createVitestConfig({
   include: ['src/test/**/*.test.{ts,js}'],
@@ -196,6 +206,38 @@ layout instead of re-deriving it. Pass an object to either for overrides, and
 - `no-eval` (error)
 - `no-implied-eval` (error)
 - `no-new-func` (error)
+
+## Migration to v3 (package renamed)
+
+v3 renames the package from `@max-health/config` to **`@max-health-inc/config`** and
+publishes it to GitHub Packages instead of being installed from a git URL. No config
+values changed; v3.0.0 is byte-identical to v2.4.0 apart from its name.
+
+The rename is not cosmetic: GitHub Packages resolves an npm scope to the owner that
+hosts it, so a package named `@max-health/*` can never be published from the
+`Max-Health-Inc` org — the registry answers `404 … does not exist under owner
+"max-health"`. Matching the scope to the owner is the only way to serve it from
+GitHub Packages, the same as `@max-health-inc/shared-ui` and the `@max-network/*`
+packages.
+
+In each consuming repo:
+
+```diff
+- "@max-health/config": "github:max-health-inc/config"
++ "@max-health-inc/config": "^3.0.0"
+```
+
+then update every specifier that names it — `extends` in each tsconfig, plus the
+eslint / vite / vitest imports:
+
+```diff
+- "extends": "@max-health/config/tsconfig/app.json"
++ "extends": "@max-health-inc/config/tsconfig/app.json"
+```
+
+and make sure the repo's `.npmrc` maps the scope (see [Install](#install)). A stale
+`@max-health/config` specifier fails at resolution, so nothing silently keeps the old
+copy.
 
 ## Migration from v1
 

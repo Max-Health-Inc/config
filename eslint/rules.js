@@ -5,7 +5,7 @@
  * (e.g. with eslint-config-next) instead of using the factory functions.
  *
  * @example
- * import { sharedRules, typeCheckedRules } from '@max-health/config/eslint/rules'
+ * import { sharedRules, typeCheckedRules } from '@max-health-inc/config/eslint/rules'
  */
 
 // ── TypeScript strict rules ─────────────────────────────────

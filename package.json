@@ -1,8 +1,15 @@
 {
-  "name": "@max-health/config",
-  "version": "2.4.0",
+  "name": "@max-health-inc/config",
+  "version": "3.0.0",
   "description": "Shared configs (tsconfig, eslint, vite, vitest) for Max Health repos",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Max-Health-Inc/config.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "exports": {
     "./tsconfig/app.json": "./tsconfig/app.json",
     "./tsconfig/node.json": "./tsconfig/node.json",

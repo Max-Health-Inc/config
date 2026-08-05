@@ -1,0 +1,93 @@
+name: Publish to GitHub Packages
+
+# Publishes on merge to main, matching the rest of the org (see shared-ui, mcp-host,
+# billing, worker-utils). Consumers depend on a normal semver range
+# (`"@max-health-inc/config": "^3.0.0"`) instead of `github:max-health-inc/config`.
+#
+# RELEASING = BUMPING THE VERSION IN YOUR PR. A merge whose package.json version is
+# already on the registry publishes nothing and says so in the run summary, so a merge
+# that only touches docs or CI is a safe no-op rather than a red build.
+#
+# There is no build, install, or test step: this package ships the config files
+# themselves (package.json "files"), has no dependencies of its own beyond optional
+# peers, and carries no lockfile — `npm ci` would fail and there is nothing to compile.
+#
+# THE SCOPE MUST STAY @max-health-inc. GitHub Packages resolves an npm scope to the
+# owner hosting it, so a package named @max-health/* cannot be published from
+# Max-Health-Inc at all: the registry answers 404 "does not exist under owner
+# max-health". That is what v3.0.0's rename fixed.
+#
+# The `v*` tag trigger is kept so a release can be re-run by pushing a tag; the
+# already-published check makes running twice harmless.
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write # to push the release tag
+  packages: write
+
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://npm.pkg.github.com
+          scope: '@max-health-inc'
+
+      - name: Is this version already published?
+        id: check
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          # `npm view` exits non-zero for an unpublished version — that is the
+          # success path here, so swallow it and test the captured output instead.
+          FOUND=$(npm view "$NAME@$VERSION" version --registry=https://npm.pkg.github.com 2>/dev/null || true)
+          if [ -n "$FOUND" ]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "⏭️ \`$NAME@$VERSION\` is already published — nothing to do. Bump the version in package.json to cut a release." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "📦 Publishing \`$NAME@$VERSION\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Publish to GitHub Packages
+        if: steps.check.outputs.published == 'false'
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PACKAGES_TOKEN }}
+
+      # Tag the released commit so a registry version is traceable to a commit.
+      # Skipped when the tag already exists, which is the case when this run was
+      # itself triggered by pushing that tag.
+      - name: Tag the release
+        if: steps.check.outputs.published == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v${{ steps.check.outputs.version }}"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists — skipping." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "$TAG"
+          git push origin "$TAG"
+          gh release create "$TAG" --title "$TAG" --generate-notes
