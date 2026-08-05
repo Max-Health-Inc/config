@@ -19,6 +19,32 @@ npm install --save-dev @max-health-inc/config
 `NODE_AUTH_TOKEN` needs `read:packages`. In CI it is the `GH_PACKAGES_TOKEN` secret;
 locally, `gh auth token` works.
 
+### What each preset needs you to install
+
+Only the four packages both ESLint presets import are declared as `peerDependencies`, so
+npm installs those and nothing else. The rest are listed here instead of being declared,
+because `peerDependencies` apply to the whole package while these are needed by ONE
+subpath — npm cannot scope a peer to `./vite` or `./eslint/react`, so declaring them made
+every consumer install them. A Cloudflare Worker using only `eslint/node` was pulling in
+Vite, the React SWC plugin, both React ESLint plugins and Tailwind's Vite plugin (~77 dev
+packages, `@babel` tree included) for nothing.
+
+| Preset | Install alongside it |
+|--------|----------------------|
+| `eslint/node`, `eslint/react`, `eslint/rules` | `eslint`, `@eslint/js`, `globals`, `typescript-eslint` — **declared as peers**, installed for you |
+| `eslint/react` (additionally) | `eslint-plugin-react-hooks` (>=5), `eslint-plugin-react-refresh` (>=0.4) |
+| `vite` | `vite` (>=6), `@vitejs/plugin-react-swc` (>=4) |
+| `vitest` | `vitest` (>=2) |
+| `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
+
+A React app on Vite already has every one of these in its own `devDependencies`, so this
+is a no-op there. If one is missing the preset fails at import with a plain
+module-not-found naming the package.
+
+`@tailwindcss/vite` is not in the table because nothing here imports it: pass it in
+yourself via `createViteConfig({ plugins: [tailwindcss()] })` as shown below. It was
+declared as a peer purely by mistake.
+
 ## Usage
 
 ### TypeScript

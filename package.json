@@ -1,6 +1,6 @@
 {
   "name": "@max-health-inc/config",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "Shared configs (tsconfig, eslint, vite, vitest) for Max Health repos",
   "type": "module",
   "repository": {
@@ -30,22 +30,8 @@
   "license": "MIT",
   "peerDependencies": {
     "@eslint/js": ">=9",
-    "@tailwindcss/vite": ">=4",
-    "@vitejs/plugin-react-swc": ">=4",
     "eslint": ">=9",
-    "eslint-plugin-react-hooks": ">=5",
-    "eslint-plugin-react-refresh": ">=0.4",
     "globals": ">=15",
-    "typescript-eslint": ">=8",
-    "vite": ">=6",
-    "vitest": ">=2"
-  },
-  "peerDependenciesMeta": {
-    "@tailwindcss/vite": { "optional": true },
-    "@vitejs/plugin-react-swc": { "optional": true },
-    "eslint-plugin-react-hooks": { "optional": true },
-    "eslint-plugin-react-refresh": { "optional": true },
-    "vite": { "optional": true },
-    "vitest": { "optional": true }
+    "typescript-eslint": ">=8"
   }
 }
