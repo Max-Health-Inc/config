@@ -183,6 +183,80 @@ layout instead of re-deriving it. Pass an object to either for overrides, and
 | `eslint/node` | typescript-eslint recommended + type-checked rules + consistent-type-imports |
 | `vite` | react-swc, `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
 | `vitest` | `src/**/*.test.ts` discovery, build-artifact excludes, opt-in v8 coverage and html/junit reports |
+| `doccheck` | CLI: badge/link rot, doc examples that must compile, API-docs coverage |
+
+## doccheck
+
+Docs rot without ever failing a build. `doccheck` makes three kinds of rot fail
+one. It ships as a `bin`, has no runtime dependencies, and shells out to the
+repo's own `tsc`, so it drags nothing into a consumer that does not run it.
+
+```bash
+npx doccheck badges     # badges resolve, version badge matches package.json
+npx doccheck examples   # fenced ts/tsx examples compile against the real packages
+npx doccheck coverage   # how much of the published API the docs name
+npx doccheck all
+```
+
+Configure with a `doccheck` key in the repo's `package.json`:
+
+```json
+{
+  "doccheck": {
+    "workspace": "frontend/ui",
+    "skipSegments": ["lib"],
+    "skipPrefixes": ["backend/public"],
+    "minCoverage": 8
+  }
+}
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `workspace` | `"."` | Directory the examples are compiled from |
+| `skipSegments` | see below | Extra path segments to ignore |
+| `skipPrefixes` | `[]` | Extra repo-relative prefixes to ignore |
+| `minCoverage` | `null` | Coverage floor; use as a ratchet |
+
+`node_modules`, `dist`, `build`, `coverage`, `.git`, `.doccheck`, `.next`, `out`
+and `vendor` are always skipped.
+
+**`workspace` is the setting that matters.** The examples have to be compiled
+from a directory their own imports resolve from. Compiling somewhere else and
+bridging with tsconfig `paths` looks equivalent and is not: it breaks React's
+own types, so `React.ComponentProps<"button">` quietly loses `className` and
+`children`, and every tsx example is checked against a degraded surface while
+still reporting a pass. Point `workspace` at the app that has the UI packages
+installed.
+
+### What each command checks
+
+`badges` — a hardcoded version badge that disagrees with `package.json` (prefer
+a dynamic `img.shields.io/github/v/release` endpoint, which cannot drift), an
+Actions badge naming a workflow that is not on disk or pointing at another
+repository, a badge with no alt text, an anchor matching no heading, and an
+in-repo link resolving to nothing. Links follow VitePress conventions, so
+extensionless targets and root-absolute site routes are not false positives. A
+page can declare `<!-- linkcheck: external /prefix/ -->` for paths injected at
+deploy time; only the prefixes it names are excused.
+
+`examples` — every fenced `ts`/`tsx` block is compiled. Blocks are fragments, so
+three kinds of noise resolve from the compiler's own diagnostics rather than by
+hand: a bare `return` means the block is a function body and it is re-emitted
+wrapped; a name the example never defines is declared as both a value and a
+type; an illustrative import path is dropped and its bindings declared, while
+imports that should resolve are checked for real. A block that is a shape sketch
+rather than code opts out with `<!-- doccheck: skip — why -->`.
+
+`coverage` — walks each publishable workspace package's entry points, follows
+`export *` and `export { x } from`, and matches the resulting symbols against
+the prose. Deliberately coarse: naming a symbol is not explaining it. It catches
+a package growing an export that nobody writes a word about.
+
+Both `badges` and `examples` carry a **canary**: a fixture that must produce its
+expected result before the real run is trusted. A checker whose parser has
+silently stopped matching otherwise reports a clean pass over zero findings,
+which is the one failure mode a checker must never have.
 
 ## Vitest Options
 
