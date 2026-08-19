@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  /*
+   * Thin on purpose. Vitest is imported as a module (`import { it } from 'vitest'`) and
+   * typed by its own package, so a test project needs no runner types — only its own
+   * build-info file so it does not collide with the environment project it composes with.
+   * A repo running with `globals: true` adds "vitest/globals" to its own `types`.
+   */
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.test.tsbuildinfo"
+  }
+}

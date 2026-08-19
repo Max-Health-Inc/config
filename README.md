@@ -36,6 +36,7 @@ packages, `@babel` tree included) for nothing.
 | `vite` | `vite` (>=6), `@vitejs/plugin-react-swc` (>=4) |
 | `vitest` | `vitest` (>=2) |
 | `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
+| `tsconfig/test-bun.json` | `@types/bun` (supplies `bun-types/test`) |
 
 A React app on Vite already has every one of these in its own `devDependencies`, so this
 is a no-op there. If one is missing the preset fails at import with a plain
@@ -91,6 +92,50 @@ declared as a peer purely by mistake.
 }
 ```
 
+#### Typechecking tests
+
+Test files are not in `tsconfig.app.json` (`include: ["src"]`), so `tsc -b` never sees
+them. A test file that does not compile still runs and still passes, which is how fixtures
+end up asserting against resources their own types would reject.
+
+Add a third project. Compose your environment config with the runner preset — `extends`
+takes an array, later entries win:
+
+**tsconfig.test.json (bun):**
+```json
+{
+  "extends": ["./tsconfig.app.json", "@max-health-inc/config/tsconfig/test-bun.json"],
+  "include": ["test"]
+}
+```
+
+**tsconfig.test.json (vitest):**
+```json
+{
+  "extends": ["./tsconfig.app.json", "@max-health-inc/config/tsconfig/test-vitest.json"],
+  "include": ["test"]
+}
+```
+
+Then reference it from the root config so `tsc -b` builds it:
+
+```json
+{ "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.test.json" }] }
+```
+
+`test-bun.json` pulls the `bun:test` declaration through `files`, NOT through `types`, for
+two reasons worth knowing before you reach for `types: ["bun"]` yourself:
+
+- `types` replaces the inherited array rather than adding to it, so setting it drops the
+  environment's own types and `import.meta.env` stops resolving.
+- Bun's full globals declare a `fetch` NAMESPACE carrying `preconnect`, so `typeof fetch`
+  becomes function-plus-property and ordinary browser fetch functions no longer satisfy
+  it. Browser code under test then reports errors that do not exist where it ships.
+
+Because `types` is left alone, one preset works for app, node and worker projects alike.
+Tests that use Node globals (`Buffer`, `fs`) add `"types": ["node", "vite/client"]` to
+their own test config — the preset does not guess an environment.
+
 ### ESLint
 
 **eslint.config.js (React):**
@@ -130,6 +175,22 @@ export default createNodeConfig({
   typeChecked: false,
 })
 ```
+
+**Linting test files (opt-in):**
+```js
+export default createReactConfig({
+  tsconfigRootDir: __dirname,
+  tests: true,
+  // Optional: also run the type-checked rules over tests. Needs a test project
+  // (see "Typechecking tests" above) because type-aware linting throws on files
+  // the named tsconfig excludes.
+  testTsconfig: './tsconfig.test.json',
+})
+```
+
+Without this, `test/**` is linted by nothing: the factory covers `src/**` and
+`vite.config.ts` only. Expect a backlog the first time you switch it on — unused imports
+and stray `any`s accumulate in files no rule has ever read.
 
 ### Vite
 
@@ -183,6 +244,7 @@ layout instead of re-deriving it. Pass an object to either for overrides, and
 | `eslint/node` | typescript-eslint recommended + type-checked rules + consistent-type-imports |
 | `vite` | react-swc, `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
 | `vitest` | `src/**/*.test.ts` discovery, build-artifact excludes, opt-in v8 coverage and html/junit reports |
+| `tsconfig/test-bun.json`, `tsconfig/test-vitest.json` | Test projects, so `tsc -b` covers test files without a runner's globals overriding the environment's |
 | `doccheck` | CLI: badge/link rot, doc examples that must compile, API-docs coverage |
 
 ## doccheck
@@ -282,6 +344,9 @@ which is the one failure mode a checker must never have.
 | `security` | `false` | Enable `no-eval`, `no-implied-eval`, `no-new-func` |
 | `ignores` | `[]` | Additional ignore patterns |
 | `extraRules` | `{}` | Additional rules to merge |
+| `tests` | `false` | Lint test files. Opt-in: consumers pin caret ranges and CI installs with `--no-frozen-lockfile`, so linting tests by default would redden a repo on an unrelated PR |
+| `testGlobs` | `test/**` + colocated `*.test.*` | Which files the test block covers |
+| `testTsconfig` | — | Test tsconfig path. Set it to also get type-checked rules in tests; without it they stay off, because type-aware linting throws on files the project excludes |
 
 ## Rules included
 
