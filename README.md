@@ -245,7 +245,74 @@ layout instead of re-deriving it. Pass an object to either for overrides, and
 | `vite` | react-swc, `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
 | `vitest` | `src/**/*.test.ts` discovery, build-artifact excludes, opt-in v8 coverage and html/junit reports |
 | `tsconfig/test-bun.json`, `tsconfig/test-vitest.json` | Test projects, so `tsc -b` covers test files without a runner's globals overriding the environment's |
+| `depdoctor` | `depdoctor parity` — is node_modules what a cold install would produce? Plus `depdoctor purge` for bun's global cache |
 | `doccheck` | CLI: badge/link rot, doc examples that must compile, API-docs coverage |
+
+## depdoctor
+
+`bun install` succeeding locally tells you nothing about a cold install. The machine holds
+cache entries, lockfile pins and ambient tokens that CI does not.
+
+```bash
+depdoctor parity                              # compare node_modules against a cold install
+depdoctor purge @max-health-inc/config@3.3.0  # how to clear it from bun's global cache
+```
+
+Wire it up as a script:
+
+```json
+{ "scripts": { "doctor:deps": "depdoctor parity" } }
+```
+
+`parity` copies `package.json`, the lockfile, `bunfig.toml` and any vendored `file:`
+tarballs into a temp prefix, installs there with `BUN_INSTALL_CACHE_DIR` pointed at an
+empty directory so nothing local can be reused, then diffs the result: versions for every
+package, plus a content hash for the packages you publish yourself. Exit 1 on any
+disagreement, and a failed cold install is itself a finding — CI installs the same way.
+
+`bunfig.toml` is copied because it carries the scoped-registry auth. Without it a private
+package 404s in the reference tree and reads as a parity failure rather than the missing
+token it is.
+
+### Why contents and not just versions
+
+Under bun, files in `node_modules` are hardlinks into `~/.bun/install/cache`. Writing to
+one rewrites the **global** cache entry for every project on the machine, and from then on
+the bad bytes survive everything that looks like a fix:
+
+```
+rm -rf node_modules/@scope/pkg
+bun install            # restores the ALTERED copy — the lockfile still matches
+```
+
+The upstream cause is [oven-sh/bun#29372](https://github.com/oven-sh/bun/issues/29372):
+extracted tarball content is keyed by path, not by content hash. The rule that follows is
+**never write into `node_modules`** — to test an unpublished build, `bun add ./path.tgz`.
+
+### Which packages get hashed
+
+Hashing every dependency costs far more than it finds, so `parity` hashes the scopes we
+publish (`@max-health-inc/*`, `@max-network/*`, `@babelfhir-ts/*`, `@maxhealth.tech/*`) —
+the ones developed alongside an app and therefore the ones that get overwritten in place.
+Override per repo:
+
+```json
+{ "depdoctor": { "watch": ["@max-health-inc/*", "brandc"] } }
+```
+
+### purge
+
+The cache layout is not guessable, which is why clearing it by hand usually clears the
+wrong thing:
+
+```
+@scope/name@1.2.3@@npm.pkg.github.com@@@1   private, GitHub Packages
+@scope/name@1.2.3@@@1                       npmjs (registry segment is empty)
+@scope/name                                 bare directory alongside the versioned one
+```
+
+`depdoctor purge <pkg[@version]>` lists exactly what to remove — both entries, since
+leaving either behind restores the same bytes.
 
 ## doccheck
 

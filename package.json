@@ -1,6 +1,6 @@
 {
   "name": "@max-health-inc/config",
-  "version": "3.3.0",
+  "version": "3.4.0",
   "description": "Shared configs (tsconfig, eslint, vite, vitest) and the doccheck doc-quality CLI for Max Health repos",
   "type": "module",
   "repository": {
@@ -27,15 +27,23 @@
       "types": "./vitest/index.d.ts",
       "default": "./vitest/index.js"
     },
+    "./depdoctor": {
+      "types": "./depdoctor/index.d.ts",
+      "default": "./depdoctor/index.js"
+    },
     "./doccheck": {
       "types": "./doccheck/index.d.ts",
       "default": "./doccheck/index.js"
     }
   },
   "bin": {
-    "doccheck": "./doccheck/cli.js"
+    "doccheck": "./doccheck/cli.js",
+    "depdoctor": "./depdoctor/cli.js"
   },
-  "files": ["tsconfig", "types", "eslint", "vite", "vitest", "doccheck"],
+  "files": ["tsconfig", "types", "eslint", "vite", "vitest", "doccheck", "depdoctor"],
+  "scripts": {
+    "test": "bun test"
+  },
   "license": "MIT",
   "peerDependencies": {
     "@eslint/js": ">=9",
