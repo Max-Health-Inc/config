@@ -1,0 +1,101 @@
+name: Auto PR (promote branch)
+
+# Reusable workflow: keep a standing "promote <head> → <base>" PR open and current, so
+# shipping to production is a one-click merge.
+#
+# Extracted from three near-identical copies — legal-web's create-pr.yml, connect's
+# auto-pr.yml and chess's create-pr.yml measured 95–96% identical. Everything that differed
+# between them was the PR title and the one line naming what a merge deploys; the logic was
+# the same three times over, and drifted: only chess had a concurrency guard, so two pushes
+# in quick succession raced to create the same PR in the others, and the checkout action was
+# pinned at v4 in two of them and v7 in the third.
+#
+# Usage — the caller shrinks to:
+#
+#   on:
+#     push:
+#       branches: [test]
+#   jobs:
+#     auto-pr:
+#       uses: Max-Health-Inc/config/.github/workflows/auto-pr.yml@main
+#       with:
+#         body: the production deploy (legal.maxhealth.tech)
+#
+# NOTE: the calling repo needs Settings → Actions → General → "Allow GitHub Actions to
+# create and approve pull requests" enabled, otherwise `gh pr create` is denied.
+
+on:
+  workflow_call:
+    inputs:
+      head:
+        description: Branch being promoted — the one pushed to.
+        type: string
+        default: test
+      base:
+        description: Branch promoted into. Merging into it is what triggers the deploy.
+        type: string
+        default: main
+      title:
+        description: Title for the promotion PR.
+        type: string
+        default: "🚀 Promote test → main"
+      body:
+        description: >
+          What merging deploys, as a sentence fragment completing "merging X into Y
+          triggers …" — e.g. "the production deploy (legal.maxhealth.tech)".
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  # Two pushes landing together must not both try to open the PR.
+  group: auto-pr-${{ github.repository }}-${{ inputs.head }}-${{ inputs.base }}
+  cancel-in-progress: true
+
+jobs:
+  auto-pr:
+    name: Create/update promotion PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Create or update the promotion PR
+        # Inputs travel as environment variables rather than being interpolated into the
+        # script: a `${{ }}` expansion inside `run` is textual substitution, so a branch or
+        # title containing shell metacharacters would execute.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ inputs.head }}
+          BASE_BRANCH: ${{ inputs.base }}
+          PR_TITLE: ${{ inputs.title }}
+          DEPLOY_NOTE: ${{ inputs.body }}
+        run: |
+          set -euo pipefail
+
+          git fetch --quiet origin "$BASE_BRANCH" "$HEAD_BRANCH"
+          AHEAD=$(git rev-list --count "origin/$BASE_BRANCH..origin/$HEAD_BRANCH")
+
+          if [ "$AHEAD" -eq 0 ]; then
+            echo "⏭️  $HEAD_BRANCH has no commits ahead of $BASE_BRANCH — nothing to promote."
+            exit 0
+          fi
+
+          BODY="**Automated PR** — merging \`$HEAD_BRANCH\` into \`$BASE_BRANCH\` triggers $DEPLOY_NOTE.
+
+          Commits ahead of $BASE_BRANCH: $AHEAD"
+
+          NUM=$(gh pr list --base "$BASE_BRANCH" --head "$HEAD_BRANCH" --state open \
+                  --json number --jq '.[0].number // empty')
+
+          if [ -z "$NUM" ]; then
+            gh pr create --base "$BASE_BRANCH" --head "$HEAD_BRANCH" \
+              --title "$PR_TITLE" --body "$BODY"
+          else
+            gh pr edit "$NUM" --body "$BODY"
+            echo "Updated existing PR #$NUM ($AHEAD commit(s) ahead)."
+          fi
