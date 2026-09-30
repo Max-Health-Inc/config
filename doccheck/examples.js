@@ -96,14 +96,23 @@ function extractBlocks(doc, source) {
   return blocks;
 }
 
+/** A triple-slash directive only takes effect above every statement, so it must lead the file. */
+const DIRECTIVE_RE = /^[ \t]*\/\/\/[ \t]*<(?:reference|amd-module)\b[^>]*\/>[ \t]*$/gm;
+
 /** Imports must sit at top level, so lift them out of the wrapper. */
 function splitImports(code) {
+  const directives = [];
   const imports = [];
-  const body = code.replace(IMPORT_RE, (m) => {
-    imports.push(m.trim());
-    return '';
-  });
-  return { imports, body };
+  const body = code
+    .replace(DIRECTIVE_RE, (m) => {
+      directives.push(m.trim());
+      return '';
+    })
+    .replace(IMPORT_RE, (m) => {
+      imports.push(m.trim());
+      return '';
+    });
+  return { directives, imports, body };
 }
 
 /** The module specifier an import statement targets. */
@@ -138,7 +147,7 @@ function importBindings(stmt) {
  * function wrapper — chosen from the compiler's own TS1108, never guessed.
  */
 function emit(block, declare, stubs, wrapped) {
-  const { imports, body } = splitImports(block.code);
+  const { directives, imports, body } = splitImports(block.code);
 
   // An illustrative module cannot be declared ambiently and then type-imported:
   // a shorthand `declare module` is a namespace, so `import type { X }` from it
@@ -153,6 +162,7 @@ function emit(block, declare, stubs, wrapped) {
   const names = [...new Set([...declare, ...synthesised])];
 
   const head = [
+    ...directives,
     `// GENERATED from ${block.doc}:${block.startLine}`,
     '/* eslint-disable */',
     ...kept,
