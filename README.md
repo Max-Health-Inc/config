@@ -233,6 +233,36 @@ have to name an html/junit destination, and repos that do publish them get one
 layout instead of re-deriving it. Pass an object to either for overrides, and
 `test` as a last-resort escape hatch for keys the preset does not model.
 
+### Release version and changelog (web apps)
+
+`@max-health-inc/config/vite/release` reads git at build time and gives an app the version it
+carries and the changelog its users see. Pass the result to Vite's `define`:
+
+```ts
+import { releaseDefines } from '@max-health-inc/config/vite/release'
+
+export default defineConfig({
+  define: releaseDefines(import.meta.dirname, process.env),
+})
+```
+
+- **Version.** Every production deploy is a release: the latest `vX.Y.Z` tag with its patch
+  bumped, or `package.json` when it was set ahead for a minor or major bump. Builds name their
+  exact commit: `0.1.0+202610010957.3d19d83` in production, `0.1.1-beta.202610011142.abc1234`
+  on beta, `…-dev…` locally. The channel comes from `VITE_RELEASE_CHANNEL` (`RELEASE`, `beta`),
+  else the branch (`main`, `test`). A production build of a test → main merge that changed
+  nothing names the promoted commit, so production visibly runs what beta ran.
+- **Changelog.** Per release tag, the `feat` / `fix` / `perf` subjects (Conventional Commits)
+  since the previous tag, plus a pre-release section on beta. Chores, CI, tests, merges and
+  release automation are left out. `__APP_CHANGELOG__` is a JSON `ChangelogRelease[]`.
+- **Tagging.** The deploy job tags what it shipped; nothing is committed back:
+  ```yaml
+  - run: |
+      VERSION=$(npx release-version)
+      git tag "v$VERSION" "$GITHUB_SHA" && git push origin "v$VERSION"
+  ```
+  Check out with `fetch-depth: 0` so tags and the merge's second parent are there.
+
 ## What's included
 
 | Config | Key settings |
