@@ -5,6 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import { sharedRules, typeCheckedRules as _typeCheckedRules, securityRules as _securityRules } from './rules.js'
+import { a11yConfig } from './a11y.js'
 
 /**
  * Shared ESLint flat config for React + TypeScript projects.
@@ -17,6 +18,7 @@ import { sharedRules, typeCheckedRules as _typeCheckedRules, securityRules as _s
  * @param {boolean} [options.security] - Enable security rules (default: false)
  * @param {string[]} [options.ignores] - Additional ignore patterns
  * @param {object} [options.extraRules] - Additional rules to merge
+ * @param {object} [options.a11y] - The eslint-plugin-jsx-a11y-x module; turns on its recommended rules, taught the shared-ui components
  * @param {boolean} [options.tests] - Lint test files (default: false; opt in per repo)
  * @param {string[]} [options.testGlobs] - Test file globs (default: top-level `test/` + colocated `*.test.*`)
  * @param {string} [options.testTsconfig] - Test tsconfig path; set it to get type-checked rules in tests too
@@ -33,7 +35,9 @@ export function createReactConfig(options = {}) {
     tests = false,
     testGlobs = ['test/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
     testTsconfig,
+    a11y,
   } = options
+  const accessibility = a11y ? a11yConfig(a11y) : undefined
 
   return defineConfig([
     globalIgnores(['dist', 'node_modules', '**/lib/api-client/**', ...ignores]),
@@ -45,10 +49,13 @@ export function createReactConfig(options = {}) {
         reactHooks.configs.flat.recommended,
         reactRefresh.configs.vite,
       ],
+      plugins: accessibility?.plugins ?? {},
+      settings: accessibility?.settings ?? {},
       rules: {
         ...sharedRules,
         ...(typeChecked ? _typeCheckedRules : {}),
         ...(security ? _securityRules : {}),
+        ...accessibility?.rules,
         ...extraRules,
       },
       languageOptions: {

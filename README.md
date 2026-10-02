@@ -33,6 +33,7 @@ packages, `@babel` tree included) for nothing.
 |--------|----------------------|
 | `eslint/node`, `eslint/react`, `eslint/rules` | `eslint`, `@eslint/js`, `globals`, `typescript-eslint` — **declared as peers**, installed for you |
 | `eslint/react` (additionally) | `eslint-plugin-react-hooks` (>=5), `eslint-plugin-react-refresh` (>=0.4) |
+| `eslint/react` with `a11y` | `eslint-plugin-jsx-a11y-x` (>=0.2) |
 | `vite` | `vite` (>=6), `@vitejs/plugin-react-swc` (>=4) |
 | `vitest` | `vitest` (>=2) |
 | `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
@@ -148,6 +149,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default createReactConfig({ tsconfigRootDir: __dirname })
 ```
+
+**With accessibility rules (React):**
+```js
+import jsxA11y from 'eslint-plugin-jsx-a11y-x'
+
+export default createReactConfig({ tsconfigRootDir: __dirname, a11y: jsxA11y })
+```
+Turns on the plugin's recommended set, with the shared-ui `Label`, `Input`, `Textarea`,
+`NativeSelect` and `Button` linted as the elements they render and the Radix controls
+(`SelectTrigger`, `Checkbox`, `Switch`) accepted as label targets. `eslint-plugin-jsx-a11y-x`
+is the eslint-community fork; the original `eslint-plugin-jsx-a11y` does not support ESLint 10.
+Passed in rather than imported so a repo that does not opt in never needs it installed.
 
 **eslint.config.js (Node.js):**
 ```js
