@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // `release-tag prepare` tags HEAD locally with public notes before a production build reads them;
-// `release-tag publish` pushes that tag and creates its GitHub release once the deploy succeeded.
+// `release-tag publish` pushes that tag and creates its private GitHub release, with the full internal
+// changelog under the public notes, once the deploy succeeded.
 import { execFileSync } from 'node:child_process'
 import { appendFileSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { changelogEntry, readPackageVersion, releaseTags, resolveReleaseVersion, unreleasedCommits } from './release.js'
-import { formatReleaseNotes, generateReleaseNotes, notesMarkdown, parseReleaseNotes, workersAiEndpoint } from './release-notes.js'
+import { changelogEntry, commitsByType, readPackageVersion, releaseTags, resolveReleaseVersion, unreleasedCommits } from './release.js'
+import { formatReleaseNotes, generateReleaseNotes, notesMarkdown, parseReleaseNotes, releaseBody, workersAiEndpoint } from './release-notes.js'
 
 const env = process.env
 const BOT = ['-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+github-actions[bot]@users.noreply.github.com']
@@ -75,8 +76,9 @@ function publish() {
     report(`${tag} is already released`)
     return
   }
-  const notes = notesMarkdown(parseReleaseNotes(run('git', ['tag', '--list', '--format=%(contents)', tag])))
-  run('gh', ['release', 'create', tag, '--verify-tag', '--title', tag, '--generate-notes', '--notes-file', '-'], notes)
+  const notes = parseReleaseNotes(run('git', ['tag', '--list', '--format=%(contents)', tag]))
+  const body = releaseBody(notes, commitsByType(unreleasedCommits()))
+  run('gh', ['release', 'create', tag, '--verify-tag', '--title', tag, '--notes-file', '-'], body)
   report(`### Released ${tag}`)
 }
 

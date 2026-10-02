@@ -176,3 +176,37 @@ export async function generateReleaseNotes(product, commits, client) {
 export function notesMarkdown(notes) {
   return notes.map((note) => `- **${LABELS[note.kind]}:** ${note.text}`).join('\n')
 }
+
+/** @type {ReadonlyArray<[string, string]>} */
+const SECTIONS = [
+  ['feat', 'Features'],
+  ['fix', 'Fixes'],
+  ['perf', 'Performance'],
+  ['refactor', 'Refactoring'],
+  ['build', 'Build'],
+  ['ci', 'CI'],
+  ['test', 'Tests'],
+  ['docs', 'Docs'],
+  ['chore', 'Chores'],
+]
+
+/**
+ * A GitHub release body: the public notes the app shows, then the full internal changelog. Only for
+ * a private repository, since the internal part is the raw commit record.
+ * @param {readonly ChangelogEntry[]} notes @param {ReadonlyMap<string, readonly string[]>} commitsByType
+ */
+export function releaseBody(notes, commitsByType) {
+  const known = new Map(SECTIONS)
+  const order = [...SECTIONS.map(([type]) => type), ...[...commitsByType.keys()].filter((type) => !known.has(type) && type !== 'other'), 'other']
+  const sections = order.flatMap((type) => {
+    const subjects = commitsByType.get(type)
+    if (!subjects?.length) return []
+    return [`### ${known.get(type) ?? (type === 'other' ? 'Other' : type)}\n\n${subjects.map((subject) => `- ${subject}`).join('\n')}`]
+  })
+  return [
+    '## Shown in the app',
+    notes.length > 0 ? notesMarkdown(notes) : '_Nothing in this release is visible to users._',
+    '## Changes',
+    sections.length > 0 ? sections.join('\n\n') : '_No commits since the previous release._',
+  ].join('\n\n')
+}

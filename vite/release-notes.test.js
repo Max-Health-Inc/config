@@ -4,13 +4,14 @@ import { execFileSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { buildChangelog } from './release.js'
+import { buildChangelog, commitsByType } from './release.js'
 import {
   formatReleaseNotes,
   generateReleaseNotes,
   isPublicText,
   notesFromModel,
   parseReleaseNotes,
+  releaseBody,
   releaseNotesPrompt,
 } from './release-notes.js'
 
@@ -99,6 +100,37 @@ describe('generateReleaseNotes', () => {
     const [system, user] = releaseNotesPrompt('dicom-viewer: DICOM viewer', commits)
     assert.match(system.content, /JSON only/)
     assert.match(user.content, /dicom-viewer: DICOM viewer[\s\S]*fix\(import\): stream zips/)
+  })
+})
+
+describe('the private GitHub release body', () => {
+  const commits = [
+    { subject: 'fix(billing): verify admin tokens against the realm issuer', body: '' },
+    { subject: 'feat: stream zips', body: '' },
+    { subject: 'ci: run checks on PRs', body: '' },
+    { subject: 'Update README', body: '' },
+    { subject: 'chore: release v0.1.6 [skip ci]', body: '' },
+    { subject: "Merge branch 'test'", body: '' },
+  ]
+
+  it('groups every commit by type and leaves out release automation', () => {
+    assert.deepEqual([...commitsByType(commits).entries()], [
+      ['fix', ['fix(billing): verify admin tokens against the realm issuer']],
+      ['feat', ['feat: stream zips']],
+      ['ci', ['ci: run checks on PRs']],
+      ['other', ['Update README']],
+    ])
+  })
+
+  it('puts the public notes first and the full internal record after them', () => {
+    const body = releaseBody([NOTES[0]], commitsByType(commits))
+    assert.ok(body.startsWith('## Shown in the app\n\n- **Fixed:** Large archives'))
+    assert.ok(body.includes('## Changes\n\n### Features\n\n- feat: stream zips\n\n### Fixes\n\n- fix(billing): verify admin tokens'))
+    assert.ok(body.endsWith('### CI\n\n- ci: run checks on PRs\n\n### Other\n\n- Update README'))
+  })
+
+  it('says so when a release has nothing for users', () => {
+    assert.match(releaseBody([], new Map()), /_Nothing in this release is visible to users._[\s\S]*_No commits since the previous release._/)
   })
 })
 
