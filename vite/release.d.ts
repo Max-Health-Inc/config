@@ -37,6 +37,8 @@ export declare function releaseChannel(explicit: string | undefined, branch: str
 export declare function formatBuildVersion(version: string, channel: ReleaseChannel, commit: BuildCommit | null): string
 /** A Conventional Commit as a changelog line, or null for what users do not see. */
 export declare function changelogEntry(commit: CommitMessage | string): ChangelogEntry | null
+/** Every commit subject worth an internal record, keyed by Conventional Commit type (`other` without one). */
+export declare function commitsByType(commits: readonly CommitMessage[]): Map<string, string[]>
 export declare function changelogEntries(commits: Array<CommitMessage | string>, limit?: number): ChangelogEntry[]
 /** The commit a build stands for; a no-op promotion merge stands for the commit it promoted. */
 export declare function buildCommit(channel: ReleaseChannel): BuildCommit | null

@@ -114,6 +114,23 @@ export function changelogEntry(commit) {
   }
 }
 
+/**
+ * Every commit subject worth an internal record, keyed by Conventional Commit type (`other` when it
+ * has none); release automation's own commits are left out.
+ * @param {readonly CommitMessage[]} commits @returns {Map<string, string[]>}
+ */
+export function commitsByType(commits) {
+  /** @type {Map<string, string[]>} */
+  const groups = new Map()
+  for (const { subject } of commits) {
+    const trimmed = subject.trim()
+    if (!trimmed || isNoise(trimmed)) continue
+    const type = CONVENTIONAL.exec(trimmed)?.groups?.type.toLowerCase() ?? 'other'
+    groups.set(type, [...(groups.get(type) ?? []), trimmed])
+  }
+  return groups
+}
+
 /** @param {Array<CommitMessage | string>} commits @param {number} limit @returns {ChangelogEntry[]} */
 export function changelogEntries(commits, limit = 40) {
   const seen = new Set()

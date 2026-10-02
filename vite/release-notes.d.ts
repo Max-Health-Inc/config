@@ -30,3 +30,5 @@ export declare function generateReleaseNotes(
 ): Promise<{ notes: ChangelogEntry[]; error: string | null }>
 /** The notes as a Markdown list, for a GitHub release body. */
 export declare function notesMarkdown(notes: readonly ChangelogEntry[]): string
+/** A GitHub release body: the public notes the app shows, then the full internal changelog (private repos only). */
+export declare function releaseBody(notes: readonly ChangelogEntry[], commitsByType: ReadonlyMap<string, readonly string[]>): string
