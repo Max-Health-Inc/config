@@ -15,8 +15,10 @@ const NOTE_LINE = /^- (New|Fixed|Faster)( \(breaking\))?: (.+)$/
 const MAX_NOTES = 8
 const MAX_NOTE_LENGTH = 160
 const MAX_BODY_CHARS = 600
+const MAX_DIGEST_CHARS = 24_000
+const DEFAULT_TIMEOUT_MS = 120_000
 
-export const DEFAULT_NOTES_MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
+export const DEFAULT_NOTES_MODEL = '@cf/zai-org/glm-5.3-flash'
 
 /** Workers AI's OpenAI-compatible chat completions URL for a Cloudflare account. @param {string} accountId */
 export function workersAiEndpoint(accountId) {
@@ -83,11 +85,17 @@ Rules:
 
 Answer with JSON only: {"notes":[{"kind":"feature"|"fix"|"performance","text":"..."}]}. If nothing in the release is visible to users, answer {"notes":[]}.`
 
-/** @param {readonly CommitMessage[]} commits */
-function commitDigest(commits) {
-  return commits
-    .map(({ subject, body }) => (body ? `${subject}\n${body.slice(0, MAX_BODY_CHARS)}` : subject))
-    .join('\n\n---\n\n')
+/** Newest first, within a size the model accepts; a long first release keeps its latest commits. @param {readonly CommitMessage[]} commits */
+export function commitDigest(commits) {
+  const blocks = []
+  let size = 0
+  for (const { subject, body } of commits) {
+    const block = body ? `${subject}\n${body.slice(0, MAX_BODY_CHARS)}` : subject
+    if (blocks.length > 0 && size + block.length > MAX_DIGEST_CHARS) break
+    blocks.push(block)
+    size += block.length + 7
+  }
+  return blocks.join('\n\n---\n\n')
 }
 
 /**
@@ -142,6 +150,7 @@ export function notesFromModel(content) {
  * @property {string} endpoint OpenAI-compatible chat completions URL
  * @property {string} [model]
  * @property {typeof fetch} [fetch]
+ * @property {number} [timeoutMs] give up after this long; a release never waits on its changelog
  */
 
 /**
@@ -156,6 +165,7 @@ export async function generateReleaseNotes(product, commits, client) {
   try {
     const response = await send(client.endpoint, {
       method: 'POST',
+      signal: AbortSignal.timeout(client.timeoutMs ?? DEFAULT_TIMEOUT_MS),
       headers: { authorization: `Bearer ${client.token}`, 'content-type': 'application/json' },
       body: JSON.stringify({
         model: client.model ?? DEFAULT_NOTES_MODEL,
