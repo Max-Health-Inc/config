@@ -12,12 +12,13 @@
  * The stamp is the commit's own time, so a commit always yields the same version, and a production
  * build of a promotion merge whose tree equals the promoted commit names that commit.
  *
- * CHANGELOG. Per release tag, the `feat` / `fix` / `perf` commit subjects since the previous tag
- * (Conventional Commits), plus the not yet released ones for a pre-release build.
+ * CHANGELOG. Per release tag, the public notes in its annotation (release-notes.js). Raw commit
+ * subjects are internal, so they appear only in a local dev build's unreleased section.
  */
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { parseReleaseNotes } from './release-notes.js'
 
 /** @typedef {'dev' | 'beta' | 'RELEASE'} ReleaseChannel */
 /** @typedef {{ sha: string, committedAt: Date }} BuildCommit */
@@ -163,7 +164,7 @@ export function buildCommit(channel) {
 }
 
 /** Release tags, newest first. @param {string} [ref] @returns {string[]} */
-function releaseTags(ref) {
+export function releaseTags(ref) {
   const args = ['tag', '--list', 'v[0-9]*', '--sort=-v:refname']
   if (ref) args.push('--points-at', ref)
   return (git(...args) ?? '').split('\n').map((tag) => tag.trim()).filter((tag) => parseSemver(tag) !== null)
@@ -176,9 +177,14 @@ export function resolveReleaseVersion(packageVersion) {
   return nextReleaseVersion(baseVersion(packageVersion), releaseTags()[0] ?? null)
 }
 
+/** @param {Record<string, string | undefined>} env @returns {ReleaseChannel} */
+function channelFor(env) {
+  return releaseChannel(env.VITE_RELEASE_CHANNEL, env.GITHUB_REF_NAME ?? git('rev-parse', '--abbrev-ref', 'HEAD') ?? undefined)
+}
+
 /** @param {string} packageVersion @param {Record<string, string | undefined>} env */
 export function resolveBuildVersion(packageVersion, env) {
-  const channel = releaseChannel(env.VITE_RELEASE_CHANNEL, env.GITHUB_REF_NAME ?? git('rev-parse', '--abbrev-ref', 'HEAD') ?? undefined)
+  const channel = channelFor(env)
   return formatBuildVersion(resolveReleaseVersion(packageVersion), channel, buildCommit(channel))
 }
 
@@ -186,7 +192,7 @@ const FIELD = '\x1f'
 const RECORD = '\x1e'
 
 /** Subjects and bodies in a range; \x1f and \x1e never occur in commit text. @param {string} range @returns {CommitMessage[]} */
-function commitsIn(range) {
+export function commitsIn(range) {
   return (git('log', '--no-merges', `--format=%s${FIELD}%b${RECORD}`, range) ?? '')
     .split(RECORD)
     .map((record) => record.trim())
@@ -197,32 +203,47 @@ function commitsIn(range) {
     })
 }
 
+/** Public notes per annotated release tag; a lightweight tag has none. @returns {Map<string, ChangelogEntry[]>} */
+function tagNotes() {
+  const out = git('for-each-ref', 'refs/tags/v*', `--format=%(refname:short)${FIELD}%(objecttype)${FIELD}%(contents)${RECORD}`) ?? ''
+  /** @type {Map<string, ChangelogEntry[]>} */
+  const notes = new Map()
+  for (const record of out.split(RECORD)) {
+    const [tag = '', type = '', contents = ''] = record.trim().split(FIELD)
+    if (tag && type === 'tag') notes.set(tag, parseReleaseNotes(contents))
+  }
+  return notes
+}
+
+/** Commits since the latest release tag that is not on HEAD itself. */
+export function unreleasedCommits() {
+  const own = new Set(releaseTags('HEAD'))
+  const latest = releaseTags().find((tag) => !own.has(tag))
+  return commitsIn(latest ? `${latest}..HEAD` : 'HEAD')
+}
+
 /**
- * The changelog, newest first: a pre-release section for commits after the latest tag, then one
- * section per tag. The oldest tag has no earlier one to diff against, so it lists no entries.
- * @param {string} packageVersion @param {{ maxReleases?: number }} [options] @returns {ChangelogRelease[]}
+ * The changelog, newest first: one section per release tag that carries public notes, and in a
+ * local dev build an unreleased section of raw commit subjects on top.
+ * @param {string} packageVersion @param {{ maxReleases?: number, includeUnreleased?: boolean }} [options]
+ * @returns {ChangelogRelease[]}
  */
 export function buildChangelog(packageVersion, options = {}) {
-  const tags = releaseTags().slice(0, (options.maxReleases ?? 15) + 1)
+  const tags = releaseTags().slice(0, options.maxReleases ?? 15)
   /** @type {ChangelogRelease[]} */
   const releases = []
   const latest = tags[0]
-  const released = releaseTags('HEAD')[0]
-  if (!released) {
+  if (options.includeUnreleased && !releaseTags('HEAD')[0]) {
     const pending = changelogEntries(commitsIn(latest ? `${latest}..HEAD` : 'HEAD'))
     if (pending.length > 0) {
       releases.push({ version: nextReleaseVersion(baseVersion(packageVersion), latest ?? null), date: null, unreleased: true, entries: pending })
     }
   }
-  for (const [index, tag] of tags.entries()) {
-    if (index >= (options.maxReleases ?? 15)) break
-    const previous = tags[index + 1]
-    releases.push({
-      version: baseVersion(tag),
-      date: git('log', '-1', '--format=%cI', tag),
-      unreleased: false,
-      entries: previous ? changelogEntries(commitsIn(`${previous}..${tag}`)) : [],
-    })
+  const notes = tagNotes()
+  for (const tag of tags) {
+    const entries = notes.get(tag) ?? []
+    if (entries.length === 0) continue
+    releases.push({ version: baseVersion(tag), date: git('log', '-1', '--format=%cI', tag), unreleased: false, entries })
   }
   return releases
 }
@@ -242,8 +263,9 @@ export function readPackageVersion(root) {
  */
 export function releaseDefines(root, env) {
   const packageVersion = readPackageVersion(root)
+  const channel = channelFor(env)
   return {
     __APP_VERSION__: JSON.stringify(resolveBuildVersion(packageVersion, env)),
-    __APP_CHANGELOG__: JSON.stringify(buildChangelog(packageVersion)),
+    __APP_CHANGELOG__: JSON.stringify(buildChangelog(packageVersion, { includeUnreleased: channel === 'dev' })),
   }
 }

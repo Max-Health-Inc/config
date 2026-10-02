@@ -43,8 +43,13 @@ export declare function buildCommit(channel: ReleaseChannel): BuildCommit | null
 /** The plain release version for HEAD: its own tag if released, else the next one. */
 export declare function resolveReleaseVersion(packageVersion: string): string
 export declare function resolveBuildVersion(packageVersion: string, env: Record<string, string | undefined>): string
-/** Newest first: a pre-release section, then one per release tag. */
-export declare function buildChangelog(packageVersion: string, options?: { maxReleases?: number }): ChangelogRelease[]
+/** Release tags, newest first; with `ref`, only those pointing at it. */
+export declare function releaseTags(ref?: string): string[]
+export declare function commitsIn(range: string): CommitMessage[]
+/** Commits since the latest release tag that is not on HEAD itself. */
+export declare function unreleasedCommits(): CommitMessage[]
+/** Newest first: one section per release tag carrying public notes, plus raw unreleased commits on request. */
+export declare function buildChangelog(packageVersion: string, options?: { maxReleases?: number; includeUnreleased?: boolean }): ChangelogRelease[]
 export declare function readPackageVersion(root: string): string
 /** Vite `define` entries: `__APP_VERSION__` and `__APP_CHANGELOG__`, both JSON. */
 export declare function releaseDefines(root: string, env: Record<string, string | undefined>): {
