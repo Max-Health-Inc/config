@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { buildChangelog, commitsByType } from './release.js'
 import {
+  commitDigest,
   formatReleaseNotes,
   generateReleaseNotes,
   isPublicText,
@@ -89,11 +90,30 @@ describe('generateReleaseNotes', () => {
     assert.deepEqual(await generateReleaseNotes('x', commits, { token: 't', endpoint: 'https://llm.test/v1/chat/completions', fetch: offline }), { notes: [], error: 'offline' })
   })
 
+  it('gives up on a model that never answers', async () => {
+    /** @param {unknown} _url @param {RequestInit} [init] */
+    const hang = (_url, init) =>
+      new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(init.signal?.reason)))
+    const keepAlive = setInterval(() => undefined, 1000)
+    const result = await generateReleaseNotes('x', commits, { token: 't', endpoint: 'https://llm.test', fetch: hang, timeoutMs: 20 })
+    clearInterval(keepAlive)
+    assert.equal(result.notes.length, 0)
+    assert.match(String(result.error), /timeout|aborted/i)
+  })
+
   it('asks nothing for a release without user-facing commits', async () => {
     const never = async () => {
       throw new Error('called')
     }
     assert.deepEqual(await generateReleaseNotes('x', [], { token: 't', endpoint: 'https://llm.test/v1/chat/completions', fetch: never }), { notes: [], error: null })
+  })
+
+  it('caps a long history to its newest commits, as a first release spans everything', () => {
+    const history = Array.from({ length: 500 }, (_, i) => ({ subject: `feat: change ${i}`, body: 'x'.repeat(600) }))
+    const digest = commitDigest(history)
+    assert.ok(digest.length <= 24_000 + 700)
+    assert.ok(digest.startsWith('feat: change 0\n'))
+    assert.doesNotMatch(digest, /change 499/)
   })
 
   it('puts the product and every commit in the prompt', () => {

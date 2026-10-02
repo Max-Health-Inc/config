@@ -10,6 +10,8 @@ export declare function formatReleaseNotes(version: string, notes: readonly Chan
 export declare function parseReleaseNotes(message: string): ChangelogEntry[]
 /** False for text carrying code, paths, hashes or links. */
 export declare function isPublicText(text: string): boolean
+/** The commits as model input, newest first and capped in size. */
+export declare function commitDigest(commits: readonly CommitMessage[]): string
 export declare function releaseNotesPrompt(product: string, commits: readonly CommitMessage[]): Array<{ role: 'system' | 'user'; content: string }>
 /** The model's JSON answer as notes, keeping only well-formed ones a user may read. */
 export declare function notesFromModel(content: string): ChangelogEntry[]
@@ -20,6 +22,8 @@ export interface NotesClient {
   endpoint: string
   model?: string
   fetch?: typeof fetch
+  /** Give up after this long (default 2 minutes); a timeout yields no notes. */
+  timeoutMs?: number
 }
 
 /** Never throws: an unreachable model or an unusable answer yields no notes and an error string. */
