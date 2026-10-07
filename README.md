@@ -26,7 +26,7 @@ npm installs those and nothing else. The rest are listed here instead of being d
 because `peerDependencies` apply to the whole package while these are needed by ONE
 subpath — npm cannot scope a peer to `./vite` or `./eslint/react`, so declaring them made
 every consumer install them. A Cloudflare Worker using only `eslint/node` was pulling in
-Vite, the React SWC plugin, both React ESLint plugins and Tailwind's Vite plugin (~77 dev
+Vite, the React plugin, both React ESLint plugins and Tailwind's Vite plugin (~77 dev
 packages, `@babel` tree included) for nothing.
 
 | Preset | Install alongside it |
@@ -34,7 +34,7 @@ packages, `@babel` tree included) for nothing.
 | `eslint/node`, `eslint/react`, `eslint/rules` | `eslint`, `@eslint/js`, `globals`, `typescript-eslint` — **declared as peers**, installed for you |
 | `eslint/react` (additionally) | `eslint-plugin-react-hooks` (>=5), `eslint-plugin-react-refresh` (>=0.4) |
 | `eslint/react` with `a11y` | `eslint-plugin-jsx-a11y-x` (>=0.2) |
-| `vite` | `vite` (>=6), `@vitejs/plugin-react-swc` (>=4) |
+| `vite` | `vite` (>=8), `@vitejs/plugin-react` (>=6) |
 | `vitest` | `vitest` (>=2) |
 | `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
 | `tsconfig/test-bun.json` | `@types/bun` (supplies `bun-types/test`) |
@@ -285,7 +285,7 @@ export default defineConfig({
 | `tsconfig/worker.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, noUncheckedIndexedAccess, `types: ["@cloudflare/workers-types"]` (no DOM) |
 | `eslint/react` | typescript-eslint recommended + reactHooks + reactRefresh + type-checked rules + consistent-type-imports |
 | `eslint/node` | typescript-eslint recommended + type-checked rules + consistent-type-imports |
-| `vite` | react-swc, `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
+| `vite` | `@vitejs/plugin-react` (Oxc via Rolldown, no Babel), `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
 | `vitest` | `src/**/*.test.ts` discovery, build-artifact excludes, opt-in v8 coverage and html/junit reports |
 | `tsconfig/test-bun.json`, `tsconfig/test-vitest.json` | Test projects, so `tsc -b` covers test files without a runner's globals overriding the environment's |
 | `doccheck` | CLI: badge/link rot, doc examples that must compile, API-docs coverage |

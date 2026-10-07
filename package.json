@@ -1,6 +1,6 @@
 {
   "name": "@max-health-inc/config",
-  "version": "3.6.0",
+  "version": "4.0.0",
   "description": "Shared configs (tsconfig, eslint, vite, vitest) and the doccheck doc-quality CLI for Max Health repos",
   "type": "module",
   "repository": {
