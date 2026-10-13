@@ -363,6 +363,20 @@ expected result before the real run is trusted. A checker whose parser has
 silently stopped matching otherwise reports a clean pass over zero findings,
 which is the one failure mode a checker must never have.
 
+## wrangler-check
+
+`wrangler deploy --dry-run` for each Worker environment, failing on a bundling error **or any
+configuration warning**. Wrangler only warns about a misplaced key ("Unexpected fields found in
+env.beta.analytics_engine_datasets[0]") or a var missing from an environment, and deploys anyway;
+chess beta shipped without its sign-in config that way.
+
+```json
+{ "scripts": { "check:worker": "wrangler-check top beta" } }
+```
+
+`top` (or `""`) is the top-level config; `--config <file>` points at another wrangler file. Run it
+in CI before migrations and deploy, so a broken config fails while the database is untouched.
+
 ## Vitest Options
 
 | Option | Default | Description |

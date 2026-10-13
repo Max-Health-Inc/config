@@ -1,6 +1,6 @@
 {
   "name": "@max-health-inc/config",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Shared configs (tsconfig, eslint, vite, vitest) and the doccheck doc-quality CLI for Max Health repos",
   "type": "module",
   "repository": {
@@ -43,7 +43,8 @@
   "bin": {
     "doccheck": "./doccheck/cli.js",
     "release-version": "./vite/release-cli.js",
-    "release-tag": "./vite/release-tag-cli.js"
+    "release-tag": "./vite/release-tag-cli.js",
+    "wrangler-check": "./wrangler/check-cli.js"
   },
   "files": [
     "tsconfig",
@@ -52,7 +53,9 @@
     "vite",
     "vitest",
     "doccheck",
-    "!vite/*.test.js"
+    "wrangler",
+    "!vite/*.test.js",
+    "!wrangler/*.test.js"
   ],
   "license": "MIT",
   "peerDependencies": {
@@ -62,6 +65,6 @@
     "typescript-eslint": ">=8"
   },
   "scripts": {
-    "test": "node --test \"vite/*.test.js\" \"eslint/*.test.js\""
+    "test": "node --test \"vite/*.test.js\" \"eslint/*.test.js\" \"wrangler/*.test.js\""
   }
 }
