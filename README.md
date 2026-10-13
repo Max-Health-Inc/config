@@ -374,7 +374,11 @@ chess beta shipped without its sign-in config that way.
 { "scripts": { "check:worker": "wrangler-check top beta" } }
 ```
 
-`top` (or `""`) is the top-level config; `--config <file>` points at another wrangler file. Run it
+`top` (or `""`) is the top-level config. The project's own `wrangler.json`, `.jsonc` or `.toml` is
+passed with `--config` by default, so the redirect `@cloudflare/vite-plugin` leaves in
+`.wrangler/deploy/` (pointing at the flattened build, where `--env` is ignored) cannot stand in for
+it; `--config <file>` names another. Arguments after `--` go to wrangler: `-- --no-bundle` for a
+Worker only Vite can bundle, `-- --containers-rollout=none` to skip a container image build. Run it
 in CI before migrations and deploy, so a broken config fails while the database is untouched.
 
 ## Vitest Options
