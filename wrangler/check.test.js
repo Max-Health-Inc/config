@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { checkWrangler, configWarnings } from './check.js'
+import { checkWrangler, configWarnings, parseCheckArgs } from './check.js'
 
 const MISPLACED = [
   ' ⛅️ wrangler 4.145.0',
@@ -29,5 +29,12 @@ describe('wrangler-check', () => {
     const results = checkWrangler({ envs: ['', 'beta', 'prod'], run: (args) => outputs[args.includes('--env') ? args[args.indexOf('--env') + 1] : ''] })
     assert.deepEqual(results.map((r) => [r.env, r.ok]), [['', true], ['beta', false], ['prod', false]])
     assert.match(results[2].problem ?? '', /Could not resolve/)
+  })
+
+  it('checks every environment named, the top level included', () => {
+    assert.deepEqual(parseCheckArgs(['top', 'beta']), { envs: ['', 'beta'] })
+    assert.deepEqual(parseCheckArgs(['--config', 'w.toml', 'top', 'beta']), { envs: ['', 'beta'], config: 'w.toml' })
+    assert.deepEqual(parseCheckArgs(['beta', '--config', 'w.toml']), { envs: ['beta'], config: 'w.toml' })
+    assert.deepEqual(parseCheckArgs([]), { envs: [''] })
   })
 })

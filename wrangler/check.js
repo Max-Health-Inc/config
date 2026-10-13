@@ -52,4 +52,18 @@ export function checkWrangler({ envs, config, cwd = process.cwd(), run }) {
   })
 }
 
+/**
+ * `[--config <file>] <env>...` into the environments to check; `top` or `""` is the top level,
+ * and no environment at all means the top level alone.
+ * @param {string[]} args
+ * @returns {{ envs: string[], config?: string }}
+ */
+export function parseCheckArgs(args) {
+  const configAt = args.indexOf('--config')
+  const config = configAt === -1 ? undefined : args[configAt + 1]
+  const rest = configAt === -1 ? args : [...args.slice(0, configAt), ...args.slice(configAt + 2)]
+  const envs = rest.map((env) => (env === 'top' ? '' : env))
+  return { envs: envs.length > 0 ? envs : [''], ...(config ? { config } : {}) }
+}
+
 export { label as envLabel }
