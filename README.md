@@ -181,6 +181,14 @@ export default createNodeConfig({
 })
 ```
 
+**With server-side JSX (Hono JSX `.tsx` pages):**
+```js
+export default createNodeConfig({
+  tsconfigRootDir: __dirname,
+  files: ['**/*.{ts,tsx}'],
+})
+```
+
 **Without type-checked rules (faster linting):**
 ```js
 export default createNodeConfig({

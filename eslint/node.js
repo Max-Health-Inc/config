@@ -10,6 +10,7 @@ import { sharedRules, typeCheckedRules as _typeCheckedRules, securityRules as _s
  * @param {object} [options]
  * @param {string} [options.tsconfigRootDir] - Root dir for tsconfig resolution
  * @param {string} [options.tsconfig] - Path to tsconfig (default: './tsconfig.json')
+ * @param {string[]} [options.files] - Source globs (default: every `.ts` file); add `.tsx` for server-side JSX
  * @param {boolean} [options.typeChecked] - Enable type-checked rules (default: true)
  * @param {boolean} [options.security] - Enable security rules (default: false)
  * @param {string[]} [options.ignores] - Additional ignore patterns
@@ -22,6 +23,7 @@ export function createNodeConfig(options = {}) {
   const {
     tsconfigRootDir,
     tsconfig = './tsconfig.json',
+    files = ['src/**/*.ts', '**/*.ts'],
     typeChecked = true,
     security = false,
     ignores = [],
@@ -34,7 +36,7 @@ export function createNodeConfig(options = {}) {
   return defineConfig([
     globalIgnores(['dist', 'node_modules', '.wrangler', ...ignores]),
     {
-      files: ['src/**/*.ts', '**/*.ts'],
+      files,
       extends: [js.configs.recommended, tseslint.configs.recommended],
       rules: {
         ...sharedRules,
