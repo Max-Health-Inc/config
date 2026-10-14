@@ -4,7 +4,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
-import { sharedRules, typeCheckedRules as _typeCheckedRules, securityRules as _securityRules } from './rules.js'
+import { sharedRules, typeCheckedRules, securityRules, bunTestRules } from './rules.js'
 import { a11yConfig } from './a11y.js'
 
 /**
@@ -22,6 +22,7 @@ import { a11yConfig } from './a11y.js'
  * @param {boolean} [options.tests] - Lint test files (default: false; opt in per repo)
  * @param {string[]} [options.testGlobs] - Test file globs (default: top-level `test/` + colocated `*.test.*`)
  * @param {string} [options.testTsconfig] - Test tsconfig path; set it to get type-checked rules in tests too
+ * @param {'bun'} [options.testRunner] - Test runner whose typing gaps the type-checked test rules allow for
  */
 export function createReactConfig(options = {}) {
   const {
@@ -35,6 +36,7 @@ export function createReactConfig(options = {}) {
     tests = false,
     testGlobs = ['test/**/*.{ts,tsx}', 'src/**/*.test.{ts,tsx}'],
     testTsconfig,
+    testRunner,
     a11y,
   } = options
   const accessibility = a11y ? a11yConfig(a11y) : undefined
@@ -53,8 +55,8 @@ export function createReactConfig(options = {}) {
       settings: accessibility?.settings ?? {},
       rules: {
         ...sharedRules,
-        ...(typeChecked ? _typeCheckedRules : {}),
-        ...(security ? _securityRules : {}),
+        ...(typeChecked ? typeCheckedRules : {}),
+        ...(security ? securityRules : {}),
         ...accessibility?.rules,
         ...extraRules,
       },
@@ -91,8 +93,9 @@ export function createReactConfig(options = {}) {
           extends: [js.configs.recommended, tseslint.configs.recommended],
           rules: {
             ...sharedRules,
-            ...(typeChecked && testTsconfig ? _typeCheckedRules : {}),
-            ...(security ? _securityRules : {}),
+            ...(typeChecked && testTsconfig ? typeCheckedRules : {}),
+            ...(typeChecked && testTsconfig && testRunner === 'bun' ? bunTestRules : {}),
+            ...(security ? securityRules : {}),
             ...extraRules,
           },
           languageOptions: {
@@ -100,7 +103,7 @@ export function createReactConfig(options = {}) {
             globals: { ...globals.browser, ...globals.node },
             parserOptions: {
               tsconfigRootDir,
-              ...(testTsconfig && { project: testTsconfig }),
+              project: testTsconfig ?? false,
             },
           },
         }]

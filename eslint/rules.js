@@ -53,3 +53,14 @@ export const bestPracticeRules = {
   'eqeqeq': ['error', 'always', { null: 'ignore' }],
   'no-var': 'error',
 }
+
+// ── Bun test runner (bun-types gaps) ────────────────────────
+// bun-types declares `expect(p).rejects/resolves` matchers as returning void although
+// they return promises that must be awaited, and `mock.module` as `void | Promise<void>`.
+export const bunTestRules = {
+  '@typescript-eslint/await-thenable': 'off',
+  '@typescript-eslint/no-floating-promises': [
+    'error',
+    { allowForKnownSafeCalls: [{ from: 'package', package: 'bun:test', name: 'module' }] },
+  ],
+}

@@ -209,6 +209,12 @@ export default createReactConfig({
 })
 ```
 
+Tests under `bun test` with type-checked rules also pass `testRunner: 'bun'`. bun-types
+declares `expect(p).rejects`/`.resolves` matchers as returning `void` although they return
+promises that must be awaited, and `mock.module` as `void | Promise<void>`; the option turns
+off `await-thenable` for tests and treats `mock.module` as a known-safe call
+(`bunTestRules` in `eslint/rules`).
+
 Without this, `test/**` is linted by nothing: the factory covers `src/**` and
 `vite.config.ts` only. Expect a backlog the first time you switch it on — unused imports
 and stray `any`s accumulate in files no rule has ever read.

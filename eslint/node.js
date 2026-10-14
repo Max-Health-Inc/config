@@ -2,7 +2,7 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import globals from 'globals'
 import { defineConfig, globalIgnores } from 'eslint/config'
-import { sharedRules, typeCheckedRules as _typeCheckedRules, securityRules as _securityRules } from './rules.js'
+import { sharedRules, typeCheckedRules, securityRules, bunTestRules } from './rules.js'
 
 /**
  * Shared ESLint flat config for Node.js + TypeScript projects.
@@ -18,6 +18,7 @@ import { sharedRules, typeCheckedRules as _typeCheckedRules, securityRules as _s
  * @param {boolean} [options.tests] - Lint test files (default: false; opt in per repo)
  * @param {string[]} [options.testGlobs] - Test file globs (default: top-level `test/` + colocated `*.test.ts`)
  * @param {string} [options.testTsconfig] - Test tsconfig path; set it to get type-checked rules in tests too
+ * @param {'bun'} [options.testRunner] - Test runner whose typing gaps the type-checked test rules allow for
  */
 export function createNodeConfig(options = {}) {
   const {
@@ -31,6 +32,7 @@ export function createNodeConfig(options = {}) {
     tests = false,
     testGlobs = ['test/**/*.ts', 'src/**/*.test.ts'],
     testTsconfig,
+    testRunner,
   } = options
 
   return defineConfig([
@@ -40,8 +42,8 @@ export function createNodeConfig(options = {}) {
       extends: [js.configs.recommended, tseslint.configs.recommended],
       rules: {
         ...sharedRules,
-        ...(typeChecked ? _typeCheckedRules : {}),
-        ...(security ? _securityRules : {}),
+        ...(typeChecked ? typeCheckedRules : {}),
+        ...(security ? securityRules : {}),
         ...extraRules,
       },
       languageOptions: {
@@ -66,8 +68,9 @@ export function createNodeConfig(options = {}) {
           extends: [js.configs.recommended, tseslint.configs.recommended],
           rules: {
             ...sharedRules,
-            ...(typeChecked && testTsconfig ? _typeCheckedRules : {}),
-            ...(security ? _securityRules : {}),
+            ...(typeChecked && testTsconfig ? typeCheckedRules : {}),
+            ...(typeChecked && testTsconfig && testRunner === 'bun' ? bunTestRules : {}),
+            ...(security ? securityRules : {}),
             ...extraRules,
           },
           languageOptions: {
@@ -75,7 +78,7 @@ export function createNodeConfig(options = {}) {
             globals: globals.node,
             parserOptions: {
               tsconfigRootDir,
-              ...(testTsconfig && { project: testTsconfig }),
+              project: testTsconfig ?? false,
             },
           },
         }]
