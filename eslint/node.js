@@ -65,7 +65,7 @@ export function createNodeConfig(options = {}) {
     ...(tests
       ? [{
           files: testGlobs,
-          extends: [js.configs.recommended, tseslint.configs.recommended],
+          extends: [js.configs.recommended, tseslint.configs.recommended, ...(testTsconfig ? [] : [tseslint.configs.disableTypeChecked])],
           rules: {
             ...sharedRules,
             ...(typeChecked && testTsconfig ? typeCheckedRules : {}),

@@ -36,3 +36,10 @@ test('allows for bun-types gaps in type-checked bun tests', () => {
   const [, options] = block.rules['@typescript-eslint/no-floating-promises']
   assert.deepEqual(options.allowForKnownSafeCalls, [{ from: 'package', package: 'bun:test', name: 'module' }])
 })
+
+test('switches off the type-aware rules the source block applies, for tests without a project', () => {
+  const config = createNodeConfig({ tests: true })
+  const testBlocks = config.filter((block) => JSON.stringify(block.files ?? []).includes('test/**/*.ts'))
+  const lastSetting = testBlocks.reduce((setting, block) => block.rules?.['@typescript-eslint/no-floating-promises'] ?? setting, undefined)
+  assert.equal(lastSetting, 'off')
+})
