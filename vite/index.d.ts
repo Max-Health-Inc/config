@@ -27,10 +27,14 @@ export interface CreateViteConfigOptions {
 
 /**
  * Create a shared Vite config for React + Tailwind projects.
- * Applies the shared defaults (React plugin, `@` -> ./src alias, env-driven
+ * Applies the shared defaults (React plugin from `loadReactPlugin`, `@` -> ./src alias, env-driven
  * base, production `VITE_PROXY_BASE` define, no sourcemaps) and merges in any
  * per-app overrides.
  */
 export declare function createViteConfig(
   options?: CreateViteConfigOptions,
 ): UserConfigExport
+
+export declare function loadReactPlugin(
+  load?: (name: string) => Promise<{ default: () => PluginOption }>,
+): Promise<() => PluginOption>
