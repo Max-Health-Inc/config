@@ -1,6 +1,22 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 import path from 'path'
+
+const REACT_PLUGINS = ['@vitejs/plugin-react', '@vitejs/plugin-react-swc']
+
+function isMissing(error, name) {
+  const notFound = error?.code === 'ERR_MODULE_NOT_FOUND' || error?.code === 'MODULE_NOT_FOUND'
+  return notFound && String(error.message).includes(`'${name}'`)
+}
+
+export async function loadReactPlugin(load = (name) => import(name)) {
+  for (const name of REACT_PLUGINS) {
+    try {
+      return (await load(name)).default
+    } catch (error) {
+      if (!isMissing(error, name)) throw error
+    }
+  }
+  throw new Error(`createViteConfig needs ${REACT_PLUGINS.join(' or ')} installed as a devDependency`)
+}
 
 /**
  * Create a shared Vite config for React + Tailwind projects.
@@ -27,7 +43,8 @@ export function createViteConfig(options = {}) {
     worker,
   } = options
 
-  return defineConfig(({ command, mode }) => {
+  return async ({ command, mode }) => {
+    const react = await loadReactPlugin()
     const prodDefines = command === 'build' && mode === 'production' && process.env.VITE_PROXY_BASE
       ? { 'import.meta.env.VITE_PROXY_BASE': JSON.stringify(process.env.VITE_PROXY_BASE) }
       : {}
@@ -51,5 +68,5 @@ export function createViteConfig(options = {}) {
         ...build,
       },
     }
-  })
+  }
 }
