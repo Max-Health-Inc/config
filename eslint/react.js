@@ -4,7 +4,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
-import { sharedRules, typeCheckedRules, securityRules, bunTestRules } from './rules.js'
+import { composeRules, testFilesConfig } from './compose.js'
 import { a11yConfig } from './a11y.js'
 
 /**
@@ -53,13 +53,7 @@ export function createReactConfig(options = {}) {
       ],
       plugins: accessibility?.plugins ?? {},
       settings: accessibility?.settings ?? {},
-      rules: {
-        ...sharedRules,
-        ...(typeChecked ? typeCheckedRules : {}),
-        ...(security ? securityRules : {}),
-        ...accessibility?.rules,
-        ...extraRules,
-      },
+      rules: composeRules({ typeChecked, security, extraRules, extra: accessibility?.rules }),
       languageOptions: {
         ecmaVersion: 'latest',
         globals: globals.browser,
@@ -69,44 +63,10 @@ export function createReactConfig(options = {}) {
         },
       },
     },
-    /*
-     * Test files. Without this block the factory covered `src/**` and `vite.config.ts`
-     * only, so a top-level `test/` dir shipped unlinted — which is how repos ended up
-     * with hundreds of tests and no lint over any of them.
-     *
-     * Opt-in, not default: consumers pin a caret range and their CI installs with
-     * `--no-frozen-lockfile`, so linting tests by default would turn a repo red on an
-     * unrelated PR, for a backlog nobody chose to take on that day.
-     *
-     * Placed after the `src/**` block so it also wins for colocated `*.test.ts`, whose
-     * parser options must differ: the app tsconfig excludes test files, and type-aware
-     * linting throws on a file its project does not include. Type-checked rules are
-     * therefore opt-in via `testTsconfig` (see tsconfig/test-bun.json) rather than on by
-     * default and broken.
-     *
-     * No React plugins: a test is not a component, and react-refresh's export rule
-     * fires on every exported helper.
-     */
+    // Opt-in: consumers pin a caret range, so linting tests by default would redden unrelated PRs.
+    // No React plugins here: react-refresh's export rule fires on every exported test helper.
     ...(tests
-      ? [{
-          files: testGlobs,
-          extends: [js.configs.recommended, tseslint.configs.recommended, ...(testTsconfig ? [] : [tseslint.configs.disableTypeChecked])],
-          rules: {
-            ...sharedRules,
-            ...(typeChecked && testTsconfig ? typeCheckedRules : {}),
-            ...(typeChecked && testTsconfig && testRunner === 'bun' ? bunTestRules : {}),
-            ...(security ? securityRules : {}),
-            ...extraRules,
-          },
-          languageOptions: {
-            ecmaVersion: 'latest',
-            globals: { ...globals.browser, ...globals.node },
-            parserOptions: {
-              tsconfigRootDir,
-              project: testTsconfig ?? false,
-            },
-          },
-        }]
+      ? [testFilesConfig({ files: testGlobs, globals: { ...globals.browser, ...globals.node }, tsconfigRootDir, testTsconfig, testRunner, typeChecked, security, extraRules })]
       : []),
     {
       files: ['vite.config.ts'],
