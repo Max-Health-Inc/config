@@ -2,7 +2,7 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import globals from 'globals'
 import { defineConfig, globalIgnores } from 'eslint/config'
-import { sharedRules, typeCheckedRules, securityRules, bunTestRules } from './rules.js'
+import { composeRules, testFilesConfig } from './compose.js'
 
 /**
  * Shared ESLint flat config for Node.js + TypeScript projects.
@@ -40,12 +40,7 @@ export function createNodeConfig(options = {}) {
     {
       files,
       extends: [js.configs.recommended, tseslint.configs.recommended],
-      rules: {
-        ...sharedRules,
-        ...(typeChecked ? typeCheckedRules : {}),
-        ...(security ? securityRules : {}),
-        ...extraRules,
-      },
+      rules: composeRules({ typeChecked, security, extraRules }),
       languageOptions: {
         ecmaVersion: 'latest',
         globals: globals.node,
@@ -55,33 +50,8 @@ export function createNodeConfig(options = {}) {
         },
       },
     },
-    /*
-     * Test files. The block above matches `**\/*.ts`, so tests were already linted here
-     * BUT parsed against the main tsconfig — which throws for any test file that config
-     * excludes. This block re-parses them without a project unless `testTsconfig` names
-     * one (see tsconfig/test-bun.json), so type-checked rules are opt-in rather than
-     * on by default and broken.
-     */
     ...(tests
-      ? [{
-          files: testGlobs,
-          extends: [js.configs.recommended, tseslint.configs.recommended, ...(testTsconfig ? [] : [tseslint.configs.disableTypeChecked])],
-          rules: {
-            ...sharedRules,
-            ...(typeChecked && testTsconfig ? typeCheckedRules : {}),
-            ...(typeChecked && testTsconfig && testRunner === 'bun' ? bunTestRules : {}),
-            ...(security ? securityRules : {}),
-            ...extraRules,
-          },
-          languageOptions: {
-            ecmaVersion: 'latest',
-            globals: globals.node,
-            parserOptions: {
-              tsconfigRootDir,
-              project: testTsconfig ?? false,
-            },
-          },
-        }]
+      ? [testFilesConfig({ files: testGlobs, globals: globals.node, tsconfigRootDir, testTsconfig, testRunner, typeChecked, security, extraRules })]
       : []),
   ])
 }

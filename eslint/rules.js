@@ -8,6 +8,16 @@
  * import { sharedRules, typeCheckedRules } from '@max-health-inc/config/eslint/rules'
  */
 
+// ── Best practice rules (language-agnostic, also part of sharedRules) ──
+export const bestPracticeRules = {
+  'eqeqeq': ['error', 'always', { null: 'ignore' }],
+  'no-var': 'error',
+  'prefer-const': 'error',
+  'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
+  'no-debugger': 'error',
+  'no-duplicate-imports': 'error',
+}
+
 // ── TypeScript strict rules ─────────────────────────────────
 export const sharedRules = {
   '@typescript-eslint/no-unused-vars': [
@@ -20,12 +30,7 @@ export const sharedRules = {
     { prefer: 'type-imports', fixStyle: 'inline-type-imports', disallowTypeAnnotations: false },
   ],
   '@typescript-eslint/no-unused-expressions': 'error',
-  'eqeqeq': ['error', 'always', { null: 'ignore' }],
-  'no-var': 'error',
-  'prefer-const': 'error',
-  'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
-  'no-debugger': 'error',
-  'no-duplicate-imports': 'error',
+  ...bestPracticeRules,
 }
 
 // ── Type-checked rules (catches async bugs) ─────────────────
@@ -40,18 +45,6 @@ export const securityRules = {
   'no-eval': 'error',
   'no-implied-eval': 'error',
   'no-new-func': 'error',
-}
-
-// ── Best practice rules ─────────────────────────────────────
-// Alias — sharedRules already contains best-practice rules mixed in.
-// This export provides a semantic name for consumers that distinguish them.
-export const bestPracticeRules = {
-  'prefer-const': 'error',
-  'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
-  'no-debugger': 'error',
-  'no-duplicate-imports': 'error',
-  'eqeqeq': ['error', 'always', { null: 'ignore' }],
-  'no-var': 'error',
 }
 
 // ── Bun test runner (bun-types gaps) ────────────────────────
