@@ -18,7 +18,7 @@ const MAX_BODY_CHARS = 600
 const MAX_DIGEST_CHARS = 24_000
 const DEFAULT_TIMEOUT_MS = 120_000
 
-export const DEFAULT_NOTES_MODEL = '@cf/zai-org/glm-5.3-flash'
+export const DEFAULT_NOTES_MODEL = '@cf/google/gemma-4-26b-a4b-it'
 
 /** Workers AI's OpenAI-compatible chat completions URL for a Cloudflare account. @param {string} accountId */
 export function workersAiEndpoint(accountId) {
