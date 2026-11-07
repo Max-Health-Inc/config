@@ -10,5 +10,3 @@ jobs:
     with:
       runtime: bun
       steps: "test"
-    secrets:
-      GH_PACKAGES_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
