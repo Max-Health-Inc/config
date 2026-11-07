@@ -1,8 +1,7 @@
 name: Publish to GitHub Packages
 
-# Publishes on merge to main; a version already on the registry is a no-op. Bump the
-# version in your PR to release. Nothing to install or build: the package ships its config
-# files as-is and has no lockfile. The scope must stay @max-health-inc, because a GitHub
+# Publishes on merge to main; a version already on the registry is a no-op, so bump the
+# version in your PR to release. The scope must stay @max-health-inc, because a GitHub
 # Packages scope resolves to the owner hosting it.
 on:
   push:
@@ -25,8 +24,9 @@ jobs:
     uses: max-network/.github/.github/workflows/publish-package.yml@main
     with:
       scope: '@max-health-inc'
-      gate: false
-      install: none
+      runtime: bun
+      check-steps: "test"
+      install: bun install
       tag-release: true
       create-release: true
     secrets:

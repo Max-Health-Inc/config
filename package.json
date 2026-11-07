@@ -54,6 +54,7 @@
     "vitest",
     "doccheck",
     "wrangler",
+    "!eslint/*.test.js",
     "!vite/*.test.js",
     "!wrangler/*.test.js"
   ],

@@ -1,0 +1,12 @@
+name: Check
+
+on:
+  pull_request:
+  workflow_call:
+
+jobs:
+  check:
+    uses: max-network/.github/.github/workflows/check.yml@main
+    with:
+      runtime: bun
+      steps: "test"
