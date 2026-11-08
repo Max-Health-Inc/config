@@ -19,6 +19,20 @@ export function composeRules({ typeChecked, security, extraRules, bunTests = fal
 }
 
 /**
+ * Language options every block shares: latest syntax, the block's globals, and its tsconfig
+ * `project` (false parses without one; undefined leaves it unset).
+ *
+ * @param {{ globals: object, tsconfigRootDir?: string, project?: string | false }} options
+ */
+export function languageOptions({ globals, tsconfigRootDir, project }) {
+  return {
+    ecmaVersion: 'latest',
+    globals,
+    parserOptions: { tsconfigRootDir, ...(project !== undefined && { project }) },
+  }
+}
+
+/**
  * Test-file block, placed after the source block so it wins for colocated tests. Without
  * `testTsconfig` tests parse without a project and type-aware rules are switched off,
  * since a source tsconfig that excludes tests makes type-aware linting throw.
@@ -31,13 +45,6 @@ export function testFilesConfig({ files, globals, tsconfigRootDir, testTsconfig,
     files,
     extends: [js.configs.recommended, tseslint.configs.recommended, ...(testTsconfig ? [] : [tseslint.configs.disableTypeChecked])],
     rules: composeRules({ typeChecked: typed, security, extraRules, bunTests: testRunner === 'bun' }),
-    languageOptions: {
-      ecmaVersion: 'latest',
-      globals,
-      parserOptions: {
-        tsconfigRootDir,
-        project: testTsconfig ?? false,
-      },
-    },
+    languageOptions: languageOptions({ globals, tsconfigRootDir, project: testTsconfig ?? false }),
   }
 }

@@ -4,7 +4,7 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
-import { composeRules, testFilesConfig } from './compose.js'
+import { composeRules, languageOptions, testFilesConfig } from './compose.js'
 import { a11yConfig } from './a11y.js'
 
 /**
@@ -54,14 +54,7 @@ export function createReactConfig(options = {}) {
       plugins: accessibility?.plugins ?? {},
       settings: accessibility?.settings ?? {},
       rules: composeRules({ typeChecked, security, extraRules, extra: accessibility?.rules }),
-      languageOptions: {
-        ecmaVersion: 'latest',
-        globals: globals.browser,
-        parserOptions: {
-          tsconfigRootDir,
-          ...(typeChecked && { project: appTsconfig }),
-        },
-      },
+      languageOptions: languageOptions({ globals: globals.browser, tsconfigRootDir, project: typeChecked ? appTsconfig : undefined }),
     },
     // Opt-in: consumers pin a caret range, so linting tests by default would redden unrelated PRs.
     // No React plugins here: react-refresh's export rule fires on every exported test helper.
@@ -71,14 +64,7 @@ export function createReactConfig(options = {}) {
     {
       files: ['vite.config.ts'],
       extends: [js.configs.recommended, tseslint.configs.recommended],
-      languageOptions: {
-        ecmaVersion: 'latest',
-        globals: globals.node,
-        parserOptions: {
-          tsconfigRootDir,
-          project: nodeTsconfig,
-        },
-      },
+      languageOptions: languageOptions({ globals: globals.node, tsconfigRootDir, project: nodeTsconfig }),
     },
   ])
 }
