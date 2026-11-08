@@ -2,7 +2,7 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import globals from 'globals'
 import { defineConfig, globalIgnores } from 'eslint/config'
-import { composeRules, testFilesConfig } from './compose.js'
+import { composeRules, languageOptions, testFilesConfig } from './compose.js'
 
 /**
  * Shared ESLint flat config for Node.js + TypeScript projects.
@@ -41,14 +41,7 @@ export function createNodeConfig(options = {}) {
       files,
       extends: [js.configs.recommended, tseslint.configs.recommended],
       rules: composeRules({ typeChecked, security, extraRules }),
-      languageOptions: {
-        ecmaVersion: 'latest',
-        globals: globals.node,
-        parserOptions: {
-          tsconfigRootDir,
-          ...(typeChecked && { project: tsconfig }),
-        },
-      },
+      languageOptions: languageOptions({ globals: globals.node, tsconfigRootDir, project: typeChecked ? tsconfig : undefined }),
     },
     ...(tests
       ? [testFilesConfig({ files: testGlobs, globals: globals.node, tsconfigRootDir, testTsconfig, testRunner, typeChecked, security, extraRules })]
