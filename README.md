@@ -84,6 +84,26 @@ declared as a peer purely by mistake.
 
 > Uses `@cloudflare/workers-types` (no DOM libs). Add `@cloudflare/workers-types` to the worker's devDependencies.
 
+**tsconfig.json (published library):**
+```json
+{
+  "extends": "@max-health-inc/config/tsconfig/library.json",
+  "compilerOptions": { "types": ["@cloudflare/workers-types"] },
+  "include": ["src", "test"]
+}
+```
+
+**tsconfig.build.json (its emit):**
+```json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": { "noEmit": false, "outDir": "dist", "rootDir": "src" },
+  "include": ["src"]
+}
+```
+
+> For a package compiled by `tsc` and consumed as `.js` + `.d.ts`, so no `erasableSyntaxOnly` or `allowImportingTsExtensions`. `types` stays with the package (`@cloudflare/workers-types`, `node`, or `[]`), and so do `outDir`/`rootDir`, which resolve against the file that sets them.
+
 **tsconfig.json (root):**
 ```json
 {
@@ -299,6 +319,7 @@ export default defineConfig({
 | `tsconfig/app.json` | ES2023, bundler resolution, strict, react-jsx, verbatimModuleSyntax, erasableSyntaxOnly, noUncheckedIndexedAccess, `types: ["vite/client"]` |
 | `tsconfig/node.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, `types: ["node"]` |
 | `tsconfig/worker.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, noUncheckedIndexedAccess, `types: ["@cloudflare/workers-types"]` (no DOM) |
+| `tsconfig/library.json` | ES2022 target, ES2023 lib, bundler resolution, strict, noUncheckedIndexedAccess, exactOptionalPropertyTypes, noImplicitOverride, declaration; no `types` |
 | `eslint/react` | typescript-eslint recommended + reactHooks + reactRefresh + type-checked rules + consistent-type-imports |
 | `eslint/node` | typescript-eslint recommended + type-checked rules + consistent-type-imports |
 | `vite` | `@vitejs/plugin-react` (Oxc via Rolldown, no Babel) or, for an SWC-only app, `@vitejs/plugin-react-swc`; `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
