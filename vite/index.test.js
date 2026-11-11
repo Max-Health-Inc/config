@@ -22,11 +22,11 @@ const oxc = () => ({ name: 'oxc' })
 const swc = () => ({ name: 'swc' })
 
 describe('package.json', () => {
-  it('declares both React plugins as optional peers, so the ./vite preset is resolvable without forcing them on eslint-only consumers', () => {
-    for (const name of ['@vitejs/plugin-react', '@vitejs/plugin-react-swc']) {
-      assert.ok(manifest.peerDependencies?.[name], `${name} is not a peer dependency`)
-      assert.equal(manifest.peerDependenciesMeta?.[name]?.optional, true, `${name} is not an optional peer`)
+  it('declares no vite tooling as a peer, because GitHub Packages drops peerDependenciesMeta and npm then installs every peer', () => {
+    for (const name of ['vite', '@vitejs/plugin-react', '@vitejs/plugin-react-swc', '@swc/core']) {
+      assert.equal(manifest.peerDependencies?.[name], undefined, `${name} is a peer dependency`)
     }
+    assert.equal(manifest.peerDependenciesMeta, undefined)
   })
 })
 
@@ -37,6 +37,11 @@ describe('loadReactPlugin', () => {
 
   it('falls back to @vitejs/plugin-react-swc for an SWC-only app', async () => {
     assert.equal(await loadReactPlugin(loader({ '@vitejs/plugin-react-swc': swc })), swc)
+  })
+
+  it('resolves the plugin from the project by default, so no peer declaration is needed', async () => {
+    const { default: react } = await import('@vitejs/plugin-react')
+    assert.equal(await loadReactPlugin(), react)
   })
 
   it('names both packages when neither is installed', async () => {

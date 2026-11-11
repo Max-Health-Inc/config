@@ -21,22 +21,22 @@ locally, `gh auth token` works.
 
 ### What each preset needs you to install
 
-Only the four packages both ESLint presets import are declared as required
-`peerDependencies`, so npm installs those and nothing else. The two React plugins the `vite`
-preset chooses between are declared as **optional** peers: npm checks their version when
-one is installed but never installs them for you. The rest are listed here instead of being declared,
-because `peerDependencies` apply to the whole package while these are needed by ONE
-subpath — npm cannot scope a peer to `./vite` or `./eslint/react`, so declaring them made
-every consumer install them. A Cloudflare Worker using only `eslint/node` was pulling in
-Vite, the React plugin, both React ESLint plugins and Tailwind's Vite plugin (~77 dev
-packages, `@babel` tree included) for nothing.
+Only the four packages both ESLint presets import are declared as `peerDependencies`, so npm
+installs those and nothing else. Everything a single subpath needs is listed below instead,
+because `peerDependencies` apply to the whole package: declaring them made every consumer
+install them. A Cloudflare Worker using only `eslint/node` was pulling in Vite, the React
+plugin, both React ESLint plugins and Tailwind's Vite plugin (~77 dev packages, `@babel` tree
+included) for nothing. The React plugins were later declared as *optional* peers, but GitHub
+Packages drops `peerDependenciesMeta` from the metadata it serves, so npm installed them (and
+`@swc/core`) for every consumer again. The `vite` preset now resolves its React plugin from
+your project, so it needs no peer declaration at all.
 
 | Preset | Install alongside it |
 |--------|----------------------|
 | `eslint/node`, `eslint/react`, `eslint/rules` | `eslint`, `@eslint/js`, `globals`, `typescript-eslint` — **declared as peers**, installed for you |
 | `eslint/react` (additionally) | `eslint-plugin-react-hooks` (>=5), `eslint-plugin-react-refresh` (>=0.4) |
 | `eslint/react` with `a11y` | `eslint-plugin-jsx-a11y-x` (>=0.2) |
-| `vite` | `vite`, plus `@vitejs/plugin-react` (>=6) **or** `@vitejs/plugin-react-swc` (>=4), both optional peers. The preset uses `plugin-react` when installed, else the SWC plugin, and otherwise fails naming both |
+| `vite` | `vite`, plus `@vitejs/plugin-react` (>=6) **or** `@vitejs/plugin-react-swc` (>=4), resolved from your project's own dependencies. The preset uses `plugin-react` when installed, else the SWC plugin, and otherwise fails naming both |
 | `vitest` | `vitest` (>=2) |
 | `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
 | `tsconfig/test-bun.json` | `@types/bun` (supplies `bun-types/test`) |
