@@ -43,3 +43,18 @@ test('switches off the type-aware rules the source block applies, for tests with
   const lastSetting = testBlocks.reduce((setting, block) => block.rules?.['@typescript-eslint/no-floating-promises'] ?? setting, undefined)
   assert.equal(lastSetting, 'off')
 })
+
+function effectiveRule(config, glob, rule) {
+  return config
+    .filter((block) => JSON.stringify(block.files ?? []).includes(glob))
+    .reduce((setting, block) => block.rules?.[rule] ?? setting, undefined)
+}
+
+test('adds the strict rule set to source and test files when strict is set', () => {
+  const config = createNodeConfig({ typeChecked: false, strict: true, tests: true })
+  for (const glob of ['src/**/*.ts', 'test/**/*.ts']) {
+    assert.equal(effectiveRule(config, glob, '@typescript-eslint/no-non-null-assertion'), 'error')
+    assert.deepEqual(effectiveRule(config, glob, 'object-shorthand'), ['error', 'always'])
+  }
+  assert.equal(effectiveRule(createNodeConfig({ typeChecked: false }), 'src/**/*.ts', 'object-shorthand'), undefined)
+})
