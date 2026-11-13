@@ -203,6 +203,14 @@ export default createNodeConfig({
 })
 ```
 
+**With strict rules (no non-null assertions or empty object types, object shorthand, template literals):**
+```js
+export default createNodeConfig({
+  tsconfigRootDir: __dirname,
+  strict: true,
+})
+```
+
 **With server-side JSX (Hono JSX `.tsx` pages):**
 ```js
 export default createNodeConfig({
@@ -440,6 +448,7 @@ in CI before migrations and deploy, so a broken config fails while the database 
 | `tsconfigRootDir` | — | Root dir for tsconfig resolution |
 | `typeChecked` | `true` | Enable `no-floating-promises`, `await-thenable`, `no-misused-promises` |
 | `security` | `false` | Enable `no-eval`, `no-implied-eval`, `no-new-func` |
+| `strict` | `false` | Enable `no-non-null-assertion`, `no-empty-object-type`, `object-shorthand`, `prefer-template` |
 | `ignores` | `[]` | Additional ignore patterns |
 | `extraRules` | `{}` | Additional rules to merge |
 | `tests` | `false` | Lint test files. Opt-in: consumers pin caret ranges and CI installs with `--no-frozen-lockfile`, so linting tests by default would redden a repo on an unrelated PR |

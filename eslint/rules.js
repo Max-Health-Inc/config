@@ -47,6 +47,14 @@ export const securityRules = {
   'no-new-func': 'error',
 }
 
+// ── Strict rules (opt-in) ───────────────────────────────────
+export const strictRules = {
+  '@typescript-eslint/no-non-null-assertion': 'error',
+  '@typescript-eslint/no-empty-object-type': 'error',
+  'object-shorthand': ['error', 'always'],
+  'prefer-template': 'warn',
+}
+
 // ── Bun test runner (bun-types gaps) ────────────────────────
 // bun-types declares `expect(p).rejects/resolves` matchers as returning void although
 // they return promises that must be awaited, and `mock.module` as `void | Promise<void>`.

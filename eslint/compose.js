@@ -1,21 +1,22 @@
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
-import { sharedRules, typeCheckedRules, securityRules, bunTestRules } from './rules.js'
+import { sharedRules, typeCheckedRules, securityRules, strictRules, bunTestRules } from './rules.js'
 
 export const recommended = [js.configs.recommended, tseslint.configs.recommended]
 
 /**
  * The rule set every factory block starts from, in override order.
  *
- * @param {{ typeChecked?: boolean, security?: boolean, extraRules?: object, bunTests?: boolean, extra?: object }} options
+ * @param {{ typeChecked?: boolean, security?: boolean, strict?: boolean, extraRules?: object, bunTests?: boolean, extra?: object }} options
  */
-export function composeRules({ typeChecked, security, extraRules, bunTests = false, extra = {} }) {
+export function composeRules({ typeChecked, security, strict, extraRules, bunTests = false, extra = {} }) {
   return {
     ...sharedRules,
     ...(typeChecked ? typeCheckedRules : {}),
     ...(typeChecked && bunTests ? bunTestRules : {}),
     ...(security ? securityRules : {}),
+    ...(strict ? strictRules : {}),
     ...extra,
     ...extraRules,
   }
@@ -40,14 +41,14 @@ export function languageOptions({ globals, tsconfigRootDir, project }) {
  * `testTsconfig` tests parse without a project and type-aware rules are switched off,
  * since a source tsconfig that excludes tests makes type-aware linting throw.
  *
- * @param {{ files: string[], globals: object, tsconfigRootDir?: string, testTsconfig?: string, testRunner?: 'bun', typeChecked: boolean, security: boolean, extraRules: object }} options
+ * @param {{ files: string[], globals: object, tsconfigRootDir?: string, testTsconfig?: string, testRunner?: 'bun', typeChecked: boolean, security: boolean, strict: boolean, extraRules: object }} options
  */
-export function testFilesConfig({ files, globals, tsconfigRootDir, testTsconfig, testRunner, typeChecked, security, extraRules }) {
+export function testFilesConfig({ files, globals, tsconfigRootDir, testTsconfig, testRunner, typeChecked, security, strict, extraRules }) {
   const typed = Boolean(typeChecked && testTsconfig)
   return {
     files,
     extends: [...recommended, ...(testTsconfig ? [] : [tseslint.configs.disableTypeChecked])],
-    rules: composeRules({ typeChecked: typed, security, extraRules, bunTests: testRunner === 'bun' }),
+    rules: composeRules({ typeChecked: typed, security, strict, extraRules, bunTests: testRunner === 'bun' }),
     languageOptions: languageOptions({ globals, tsconfigRootDir, project: testTsconfig ?? false }),
   }
 }
@@ -59,6 +60,7 @@ export function testFilesConfig({ files, globals, tsconfigRootDir, testTsconfig,
  * @property {string} [tsconfigRootDir] - Root dir for tsconfig resolution (default: caller's cwd)
  * @property {boolean} [typeChecked] - Enable type-checked rules (default: true)
  * @property {boolean} [security] - Enable security rules (default: false)
+ * @property {boolean} [strict] - Enable the strict rules: no non-null assertions or empty object types, object shorthand, template literals (default: false)
  * @property {string[]} [ignores] - Additional ignore patterns
  * @property {object} [extraRules] - Additional rules to merge
  * @property {boolean} [tests] - Lint test files (default: false; opt in per repo)
@@ -77,6 +79,7 @@ export function createBaseConfig({
   tsconfigRootDir,
   typeChecked = true,
   security = false,
+  strict = false,
   ignores = [],
   extraRules = {},
   tests = false,
@@ -97,11 +100,11 @@ export function createBaseConfig({
       files,
       extends: [...recommended, ...presets],
       ...(accessibility && { plugins: accessibility.plugins, settings: accessibility.settings }),
-      rules: composeRules({ typeChecked, security, extraRules, extra: accessibility?.rules }),
+      rules: composeRules({ typeChecked, security, strict, extraRules, extra: accessibility?.rules }),
       languageOptions: languageOptions({ globals, tsconfigRootDir, project: typeChecked ? project : undefined }),
     },
     ...(tests
-      ? [testFilesConfig({ files: testGlobs, globals: testGlobals, tsconfigRootDir, testTsconfig, testRunner, typeChecked, security, extraRules })]
+      ? [testFilesConfig({ files: testGlobs, globals: testGlobals, tsconfigRootDir, testTsconfig, testRunner, typeChecked, security, strict, extraRules })]
       : []),
     ...extraBlocks,
   ])
