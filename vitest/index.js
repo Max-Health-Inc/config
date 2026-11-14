@@ -1,7 +1,13 @@
+import { posix } from 'node:path'
 import { defineConfig } from 'vitest/config'
 
 /** Paths that are never test sources, merged under any caller-supplied excludes. */
 const BASE_EXCLUDE = ['node_modules/**', 'dist/**', 'out/**', '**/coverage/**']
+
+/** Vitest 4 reads the HTML report's `outputFile`, vitest 5 its `outputDir`; each ignores the other. */
+function htmlReporter(file) {
+  return ['html', { outputFile: file, outputDir: posix.dirname(file) }]
+}
 
 /** Shared Vitest config; options and defaults are documented in index.d.ts. */
 export function createVitestConfig(options = {}) {
@@ -47,11 +53,13 @@ export function createVitestConfig(options = {}) {
   if (reports) {
     const overrides = reports === true ? {} : reports
     const dir = overrides.dir ?? 'test'
-    testConfig.reporters = overrides.reporters ?? ['html', 'junit', 'default']
-    testConfig.outputFile = overrides.outputFile ?? {
-      html: `${dir}/html/index.html`,
+    const { html = `${dir}/html/index.html`, ...outputFile } = overrides.outputFile ?? {
       junit: `${dir}/test-reports/junits.xml`,
     }
+    testConfig.reporters = (overrides.reporters ?? ['html', 'junit', 'default']).map((reporter) =>
+      reporter === 'html' ? htmlReporter(html) : reporter,
+    )
+    testConfig.outputFile = outputFile
   }
 
   return defineConfig({

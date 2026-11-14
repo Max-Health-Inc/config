@@ -159,7 +159,11 @@ describe('buildChangelog from tags', () => {
   let repo = ''
 
   /** @param {...string} args */
-  const git = (...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: repo, stdio: 'pipe' })
+  const git = (...args) =>
+    execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgSign=false', '-c', 'tag.gpgSign=false', ...args], {
+      cwd: repo,
+      stdio: 'pipe',
+    })
   /** @param {string} message */
   const commit = (message) => git('commit', '--allow-empty', '-m', message)
 
