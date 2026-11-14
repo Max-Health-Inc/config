@@ -12,7 +12,7 @@ export interface CreateVitestCoverageOptions {
 export interface CreateVitestReportsOptions {
   /** Test reporters (default: ['html', 'junit', 'default']). */
   reporters?: string[]
-  /** Explicit per-reporter output paths; overrides `dir`. */
+  /** Explicit per-reporter output paths; overrides `dir`. `html` goes to the HTML reporter as its `outputFile` (vitest 4) and that file's directory as its `outputDir` (vitest 5). */
   outputFile?: Record<string, string>
   /** Base directory for the default report paths (default: 'test'). */
   dir?: string

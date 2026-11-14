@@ -290,6 +290,11 @@ have to name an html/junit destination, and repos that do publish them get one
 layout instead of re-deriving it. Pass an object to either for overrides, and
 `test` as a last-resort escape hatch for keys the preset does not model.
 
+The HTML report lands in `test/html/index.html` on vitest 4 and 5 alike. Vitest 5 ignores
+`outputFile.html` and writes to `.vitest/` unless the reporter is given an `outputDir`, so the
+preset passes the html reporter both options (`['html', { outputFile, outputDir }]`) and each
+major reads its own. The junit path stays in `outputFile`, which both majors honour.
+
 ### Release version and changelog (web apps)
 
 `@max-health-inc/config/vite/release` reads git at build time and gives an app the version it
