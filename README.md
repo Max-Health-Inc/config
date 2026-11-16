@@ -372,6 +372,7 @@ Configure with a `doccheck` key in the repo's `package.json`:
 | `skipSegments` | see below | Extra path segments to ignore |
 | `skipPrefixes` | `[]` | Extra repo-relative prefixes to ignore |
 | `minCoverage` | `null` | Coverage floor; use as a ratchet |
+| `inject` | `{}` | Modules in scope in every example, mapped to the file their exports are read from |
 
 `node_modules`, `dist`, `build`, `coverage`, `.git`, `.doccheck`, `.next`, `out`
 and `vendor` are always skipped.
@@ -402,6 +403,24 @@ wrapped; a name the example never defines is declared as both a value and a
 type; an illustrative import path is dropped and its bindings declared, while
 imports that should resolve are checked for real. A block that is a shape sketch
 rather than code opts out with `<!-- doccheck: skip — why -->`.
+
+A library whose docs call its API without importing it lists itself under
+`inject`, mapping the module specifier to the source file its export names are
+read from:
+
+```json
+{
+  "doccheck": {
+    "inject": { "@acme/ui": "src/index.ts" }
+  }
+}
+```
+
+Every example then imports each of those exports it does not bind itself, so an
+unimported `Text` is the library's rather than the DOM global or an `any`. The
+specifier resolves from `workspace` like any other import, which for a package
+naming itself means its own `exports` and therefore a build first. If it does not
+resolve, the run fails instead of checking nothing.
 
 `coverage` — walks each publishable workspace package's entry points, follows
 `export *` and `export { x } from`, and matches the resulting symbols against

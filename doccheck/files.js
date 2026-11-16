@@ -25,6 +25,8 @@ const DEFAULTS = {
   skipPrefixes: [],
   /** Minimum API-docs coverage percentage. null disables the gate. */
   minCoverage: null,
+  /** Module specifier -> repo-relative entry file. Its exports are in scope in every example. */
+  inject: {},
 }
 
 /**

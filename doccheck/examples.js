@@ -15,6 +15,10 @@
  *                       @proxy-smart/shared-ui, are left alone and checked for
  *                       real. Stubs are reported so they cannot hide.
  *
+ * A library whose docs use its API without importing it lists the module under
+ * `doccheck.inject`: every export of it is imported into each example, so an
+ * unimported `Text` is the library's, not the DOM global or an `any`.
+ *
  * Prose blocks that are shape sketches rather than code opt out:
  *   <!-- doccheck: skip — why -->
  *
@@ -27,6 +31,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { ROOT, markdownFiles, tscBin } from './files.js';
+import { exportsOf } from './symbols.js';
 
 /**
  * Where the generated examples are compiled.
@@ -139,6 +144,27 @@ function importBindings(stmt) {
 }
 
 /**
+ * The exports of every `doccheck.inject` module, read from the source file it
+ * maps to. Plain imports carry types too, as the tsconfig is not isolatedModules.
+ */
+function injectedModules(config) {
+  return Object.entries(config.inject).map(([specifier, entry]) => {
+    const file = path.join(ROOT, entry);
+    if (!fs.existsSync(file)) throw new Error(`doccheck: inject entry ${entry} for ${specifier} does not exist.`);
+    return { specifier, names: [...exportsOf(file)].sort() };
+  });
+}
+
+const DECLARED = /\b(?:const|let|var|function|class|interface|type|enum)\s+([A-Za-z_$][\w$]*)/g;
+
+/** Names a block binds itself, which an injected import of the same name would clash with. */
+function ownBindings(code, imports) {
+  const own = new Set(imports.flatMap(importBindings));
+  for (const m of code.matchAll(DECLARED)) own.add(m[1]);
+  return own;
+}
+
+/**
  * Emit a block as a compilable module.
  *
  * Module mode is the default: it keeps top-level `export`, type declarations and
@@ -146,8 +172,13 @@ function importBindings(stmt) {
  * fragment using a bare `return` is illegal at top level, so it falls back to a
  * function wrapper — chosen from the compiler's own TS1108, never guessed.
  */
-function emit(block, declare, stubs, wrapped) {
+function emit(block, declare, stubs, wrapped, injected = []) {
   const { directives, imports, body } = splitImports(block.code);
+  const own = ownBindings(body, imports);
+  const injections = injected
+    .map(({ specifier, names }) => [specifier, names.filter((n) => !own.has(n))])
+    .filter(([, names]) => names.length > 0)
+    .map(([specifier, names]) => `import { ${names.join(', ')} } from '${specifier}'`);
 
   // An illustrative module cannot be declared ambiently and then type-imported:
   // a shorthand `declare module` is a namespace, so `import type { X }` from it
@@ -166,6 +197,7 @@ function emit(block, declare, stubs, wrapped) {
     `// GENERATED from ${block.doc}:${block.startLine}`,
     '/* eslint-disable */',
     ...kept,
+    ...injections,
     // Both namespaces: an invented name may be used as a value or as a type,
     // and a bare `declare const` fails the second case with TS2749.
     ...names.flatMap((d) => [`declare const ${d}: any`, `type ${d} = any`]),
@@ -233,6 +265,7 @@ function runTsc(WORK) {
 export function checkDocExamples(config, opts = {}) {
   const keep = opts.keep ?? false;
   const WORK = workDir(config);
+  const injected = injectedModules(config);
 
   const docs = markdownFiles(config);
   const blocks = docs.flatMap((d) => extractBlocks(d, fs.readFileSync(path.join(ROOT, d), 'utf8')));
@@ -265,7 +298,7 @@ export function checkDocExamples(config, opts = {}) {
   const writeAll = () => {
     for (const file of live) {
       const block = byFile.get(file);
-      const text = emit(block, declared.get(file) ?? [], stubbed.get(file) ?? [], wrapped.get(file));
+      const text = emit(block, declared.get(file) ?? [], stubbed.get(file) ?? [], wrapped.get(file), injected);
       bodyLine.set(file, text.split('\n').findIndex((l) => l === BODY_MARK) + 1);
       fs.writeFileSync(path.join(WORK, file), text, 'utf8');
     }
@@ -335,6 +368,19 @@ export function checkDocExamples(config, opts = {}) {
   if (!diags.some((d) => d.file === CANARY)) {
     console.error('doccheck examples: the canary type error was not reported — semantic checking did not run.\n');
     console.error(raw.trim());
+    return 1;
+  }
+
+  // A stubbed inject module would leave every injected name unresolved and the
+  // whole run checking nothing, so it fails instead.
+  const unresolved = injected
+    .map(({ specifier }) => specifier)
+    .filter((specifier) => [...stubbed.values()].some((list) => list.includes(specifier)));
+  if (unresolved.length > 0) {
+    console.error(
+      `doccheck examples: inject module(s) ${unresolved.join(', ')} do not resolve from workspace "${config.workspace}". ` +
+        'A package that injects its own name must be built first.\n',
+    );
     return 1;
   }
 
