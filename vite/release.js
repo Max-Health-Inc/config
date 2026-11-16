@@ -146,10 +146,13 @@ export function changelogEntries(commits, limit = 40) {
   return entries
 }
 
+/** Commit logs with bodies outgrow the 1 MB default. */
+const GIT_MAX_BUFFER = 256 * 1024 * 1024
+
 /** @param {...string} args @returns {string | null} */
 function git(...args) {
   try {
-    return execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null
+    return execFileSync('git', args, { encoding: 'utf8', maxBuffer: GIT_MAX_BUFFER, stdio: ['ignore', 'pipe', 'ignore'] }).trim() || null
   } catch {
     return null
   }

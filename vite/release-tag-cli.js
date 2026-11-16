@@ -13,7 +13,7 @@ const BOT = ['-c', 'user.name=github-actions[bot]', '-c', 'user.email=41898282+g
 
 /** @param {string} command @param {string[]} args @param {string} [input] */
 function run(command, args, input) {
-  return execFileSync(command, args, { encoding: 'utf8', input, stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'inherit'] }).trim()
+  return execFileSync(command, args, { encoding: 'utf8', input, maxBuffer: 256 * 1024 * 1024, stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'inherit'] }).trim()
 }
 
 /** @param {string} command @param {string[]} args */
@@ -54,10 +54,10 @@ async function prepare() {
     return
   }
   const commits = unreleasedCommits().filter((commit) => changelogEntry(commit) !== null)
-  const token = env.RELEASE_NOTES_TOKEN ?? env.CLOUDFLARE_API_TOKEN
-  const endpoint = env.RELEASE_NOTES_ENDPOINT ?? (env.CLOUDFLARE_ACCOUNT_ID ? workersAiEndpoint(env.CLOUDFLARE_ACCOUNT_ID) : undefined)
+  const token = env.RELEASE_NOTES_TOKEN || env.CLOUDFLARE_API_TOKEN
+  const endpoint = env.RELEASE_NOTES_ENDPOINT || (env.CLOUDFLARE_ACCOUNT_ID ? workersAiEndpoint(env.CLOUDFLARE_ACCOUNT_ID) : undefined)
   const { notes, error } = token && endpoint
-    ? await generateReleaseNotes(productDescription(), commits, { token, endpoint, model: env.RELEASE_NOTES_MODEL })
+    ? await generateReleaseNotes(productDescription(), commits, { token, endpoint, model: env.RELEASE_NOTES_MODEL || undefined })
     : { notes: [], error: 'no model configured: set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN, or RELEASE_NOTES_ENDPOINT and RELEASE_NOTES_TOKEN' }
   if (error) report(`Release notes for ${tag} could not be written (${error}); tagging without them.`)
   run('git', [...BOT, 'tag', '--annotate', '--cleanup=verbatim', '--file=-', tag, 'HEAD'], formatReleaseNotes(tag.slice(1), notes))
