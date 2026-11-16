@@ -1,10 +1,10 @@
 import { after, before, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { buildChangelog, commitsByType } from './release.js'
+import { buildChangelog, commitsByType, commitsIn } from './release.js'
 import {
   commitDigest,
   formatReleaseNotes,
@@ -193,5 +193,15 @@ describe('buildChangelog from tags', () => {
     const [pending] = buildChangelog('0.1.0', { includeUnreleased: true })
     assert.equal(pending.unreleased, true)
     assert.deepEqual(pending.entries.map((e) => e.text), ['Internal detail nobody should read'])
+  })
+
+  it('reads a history longer than the default 1 MB child process buffer', () => {
+    const message = path.join(repo, '.git', 'LONG_MSG')
+    writeFileSync(message, `feat: a long body
+
+${'x'.repeat(1_200_000)}
+`)
+    git('commit', '--allow-empty', '-F', message)
+    assert.equal(commitsIn('HEAD')[0]?.subject, 'feat: a long body')
   })
 })
