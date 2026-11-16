@@ -15,6 +15,13 @@ export interface DocCheckUserConfig {
   skipPrefixes?: string[]
   /** Coverage floor. Use it as a ratchet: raise it as packages get documented. */
   minCoverage?: number | null
+  /**
+   * Modules the docs use without importing, mapped to the repo-relative source file
+   * their export names are read from, e.g. `{ "my-lib": "src/index.ts" }`. Each
+   * example imports every export it does not bind itself. The specifier must
+   * resolve from `workspace`, so a library checking its own name builds first.
+   */
+  inject?: Record<string, string>
 }
 
 export interface DocCheckConfig extends Required<Omit<DocCheckUserConfig, 'skipSegments'>> {
@@ -51,6 +58,9 @@ export function checkBadges(
 
 /** Typecheck fenced ts/tsx examples. Returns a process exit code. */
 export function checkDocExamples(config: DocCheckConfig, opts?: { keep?: boolean }): number
+
+/** Exported symbol names reachable from a TypeScript entry file, following `export * from`. */
+export function exportsOf(entry: string): Set<string>
 
 /** API-docs coverage. Returns a process exit code. */
 export function checkDocsCoverage(

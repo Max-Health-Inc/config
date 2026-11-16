@@ -30,6 +30,7 @@ Config (package.json "doccheck"):
   skipSegments  extra path segments to ignore
   skipPrefixes  extra repo-relative path prefixes to ignore
   minCoverage   coverage floor for \`coverage\` and \`all\`
+  inject        { specifier: entry file } whose exports every example sees
 `
 
 async function run(command, args, config) {
