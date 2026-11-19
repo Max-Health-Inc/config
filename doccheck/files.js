@@ -51,16 +51,21 @@ export function loadConfig(root = ROOT) {
   }
 }
 
-/** Every markdown file the repo owns, as repo-relative POSIX paths. */
-export function markdownFiles(config, dir = ROOT, found = []) {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (config.skipSegments.has(entry.name)) continue
-    const abs = path.join(dir, entry.name)
-    const rel = path.relative(ROOT, abs)
-    if (config.skipPrefixes.some((s) => rel === s || rel.startsWith(`${s}${path.sep}`))) continue
-    if (entry.isDirectory()) markdownFiles(config, abs, found)
-    else if (entry.name.toLowerCase().endsWith('.md')) found.push(rel.split(path.sep).join('/'))
+/** Every markdown file the repo owns, as repo-relative POSIX paths. Nested checkouts (worktrees, submodules) belong to another tree. */
+export function markdownFiles(config, root = ROOT) {
+  const found = []
+  const walk = (dir) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (config.skipSegments.has(entry.name)) continue
+      const abs = path.join(dir, entry.name)
+      const rel = path.relative(root, abs)
+      if (config.skipPrefixes.some((s) => rel === s || rel.startsWith(`${s}${path.sep}`))) continue
+      if (entry.isDirectory()) {
+        if (!fs.existsSync(path.join(abs, '.git'))) walk(abs)
+      } else if (entry.name.toLowerCase().endsWith('.md')) found.push(rel.split(path.sep).join('/'))
+    }
   }
+  walk(root)
   return found
 }
 
