@@ -48,7 +48,7 @@ export interface CoverageReport {
 export function loadConfig(root?: string): DocCheckConfig
 
 /** Every markdown file the repo owns, as repo-relative POSIX paths. */
-export function markdownFiles(config: DocCheckConfig): string[]
+export function markdownFiles(config: DocCheckConfig, root?: string): string[]
 
 /** Badges and in-repo links. Resolves to a process exit code. */
 export function checkBadges(
