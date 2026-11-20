@@ -40,7 +40,7 @@ your project, so it needs no peer declaration at all.
 | `vitest` | `vitest` (>=2) |
 | `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
 | `tsconfig/test-bun.json` | `@types/bun` (supplies `bun-types/test`) |
-| `tsgo` | nothing: `typescript@^7` is a dependency of this package (see [tsgo](#tsgo)) |
+| `tsgo` | nothing: TypeScript 7's platform binary is an optional dependency of this package (see [tsgo](#tsgo)) |
 
 A React app on Vite already has every one of these in its own `devDependencies`, so this
 is a no-op there. If one is missing the preset fails at import with a plain
@@ -466,17 +466,17 @@ TypeScript 7's native compiler, for typechecking:
 { "scripts": { "typecheck": "tsgo --noEmit && tsgo --noEmit -p test" } }
 ```
 
-`tsgo` takes `tsc`'s arguments. The root `typescript` stays on 6.x, because typescript-eslint
-loads the compiler API that 7.0 no longer ships, while `tsgo` runs the TypeScript 7 this package
-depends on. That dependency is nested under the package whenever the root holds another major, so
-its `tsc` bin never replaces the root one, and `tsgo` resolves it from its own location. If the
-TypeScript it finds is older than 7, it exits instead of typechecking with the JS compiler.
+`tsgo` takes `tsc`'s arguments and runs TypeScript 7's native executable. The root `typescript`
+stays on 6.x, because typescript-eslint loads the compiler API that 7.0 no longer ships.
 
-The cost is one platform binary per install: `typescript@7` pulls the single
-`@typescript/typescript-<platform>-<arch>` package matching the machine, about 31 MB on disk
-(2.5 MB of JS plus a 28 MB executable). It is a regular dependency rather than a peer because a
-peer resolves at the root, where TypeScript 6 has to stay, and GitHub Packages drops the
-`peerDependenciesMeta` that would make it optional (see above).
+This package lists TypeScript 7's per-platform packages (`@typescript/typescript-<platform>-<arch>`,
+the ones `typescript@7` itself installs) as optional dependencies, so npm and bun install only the
+one matching the machine: about 28 MB on disk. It does not depend on `typescript@7`. A second
+`typescript` would install a `tsc` bin that can replace the root one, and under bun's isolated
+linker it becomes what this package's typescript-eslint peer resolves, which then throws
+"typescript-eslint does not support TS 7.0" from the ESLint presets. The platform packages carry
+no bin and are not named `typescript`, so neither can happen. If the package for the platform is
+missing (an unsupported platform, or optional dependencies omitted), `tsgo` exits naming it.
 
 ## run-parallel
 

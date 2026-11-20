@@ -1,34 +1,35 @@
+import { existsSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 
-/** First TypeScript major that ships the native (Go) compiler. */
-export const NATIVE_MAJOR = 7
+/**
+ * The package TypeScript 7 ships its native compiler in for one platform, named the way
+ * `typescript`'s own `getExePath` looks it up.
+ * @param {string} [platform]
+ * @param {string} [arch]
+ * @returns {string}
+ */
+export function platformPackage(platform = process.platform, arch = process.arch) {
+  return `@typescript/typescript-${platform}-${arch}`
+}
 
 /**
- * Where TypeScript 7 may be installed, in order: this package's own `typescript` dependency, then
- * the `@typescript/native` alias TypeScript's release notes suggest for running 7 beside 6.
+ * The native `tsc` executable from this package's optional TypeScript 7 platform dependency.
+ * Depending on the platform package alone keeps a second `typescript` out of the install: under
+ * bun's isolated linker it would become what this package's typescript-eslint peer resolves, and
+ * typescript-eslint refuses TypeScript 7.
+ * @param {{ resolve?: (specifier: string) => string, exists?: (path: string) => boolean, platform?: string, arch?: string }} [options]
+ * @returns {string}
  */
-export const CANDIDATES = ['typescript', '@typescript/native']
-
-/**
- * The `lib/tsc.js` of the first TypeScript 7 or newer among {@link CANDIDATES}. Resolution starts
- * next to this file, so the TypeScript 7 nested under the package wins over a consumer's root
- * TypeScript 6; when none qualifies it throws instead of typechecking with the JS compiler.
- * @param {{ resolve: (specifier: string) => string } & ((id: string) => { version: string })} [load]
- * @returns {{ tsc: string, version: string }}
- */
-export function nativeTsc(load = createRequire(import.meta.url)) {
-  const found = []
-  for (const name of CANDIDATES) {
-    let manifest
-    try {
-      manifest = load.resolve(`${name}/package.json`)
-    } catch {
-      continue
-    }
-    const { version } = load(manifest)
-    if (Number.parseInt(version, 10) >= NATIVE_MAJOR) return { tsc: join(dirname(manifest), 'lib', 'tsc.js'), version }
-    found.push(`${name}@${version}`)
+export function nativeTsc({ resolve = createRequire(import.meta.url).resolve, exists = existsSync, platform = process.platform, arch = process.arch } = {}) {
+  const name = platformPackage(platform, arch)
+  let manifest
+  try {
+    manifest = resolve(`${name}/package.json`)
+  } catch {
+    throw new Error(`tsgo: ${name} is not installed. TypeScript 7 has no build for this platform, or optional dependencies were omitted; reinstall @max-health-inc/config with them.`)
   }
-  throw new Error(`tsgo: no TypeScript ${NATIVE_MAJOR} or newer found${found.length ? ` (found ${found.join(', ')})` : ''}. Reinstall @max-health-inc/config so its own typescript is installed.`)
+  const exe = join(dirname(manifest), 'lib', platform === 'win32' ? 'tsc.exe' : 'tsc')
+  if (!exists(exe)) throw new Error(`tsgo: ${exe} does not exist.`)
+  return platform === 'win32' && exe.length >= 248 ? `\\\\?\\${exe}` : exe
 }

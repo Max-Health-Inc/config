@@ -1,39 +1,36 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { NATIVE_MAJOR, nativeTsc } from './resolve.js'
+import { nativeTsc, platformPackage } from './resolve.js'
 
-/** @param {Record<string, string>} versions installed package name to version */
-function fakeLoad(versions) {
-  const manifests = new Map(Object.entries(versions).map(([name, version]) => [join('/app', 'node_modules', name, 'package.json'), version]))
-  const load = (manifest) => ({ version: manifests.get(manifest) ?? '' })
-  return Object.assign(load, {
-    resolve: (specifier) => {
-      const manifest = join('/app', 'node_modules', specifier)
-      if (!manifests.has(manifest)) throw new Error(`Cannot find module '${specifier}'`)
-      return manifest
-    },
-  })
-}
+const manifest = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+const PLATFORM_DIR = join('/app', 'node_modules', '@typescript', 'typescript-linux-x64')
 
 describe('tsgo', () => {
-  it('resolves a native compiler from this package', () => {
-    const { tsc, version } = nativeTsc()
-    assert.ok(Number.parseInt(version, 10) >= NATIVE_MAJOR)
-    assert.ok(existsSync(tsc))
+  it('runs the native compiler this package installs for the current platform', () => {
+    assert.match(execFileSync(nativeTsc(), ['-v'], { encoding: 'utf8' }), /^Version 7\./)
   })
 
-  it("takes the package's own typescript when it is 7 or newer", () => {
-    assert.deepEqual(nativeTsc(fakeLoad({ typescript: '7.0.2' })), { tsc: join('/app', 'node_modules', 'typescript', 'lib', 'tsc.js'), version: '7.0.2' })
+  it('finds the executable in the platform package, with .exe on Windows', () => {
+    const resolve = () => join(PLATFORM_DIR, 'package.json')
+    assert.equal(nativeTsc({ resolve, exists: () => true, platform: 'linux', arch: 'x64' }), join(PLATFORM_DIR, 'lib', 'tsc'))
+    assert.equal(nativeTsc({ resolve, exists: () => true, platform: 'win32', arch: 'x64' }), join(PLATFORM_DIR, 'lib', 'tsc.exe'))
   })
 
-  it('falls back to the @typescript/native alias when typescript resolves to 6', () => {
-    assert.equal(nativeTsc(fakeLoad({ typescript: '6.0.3', '@typescript/native': '7.1.0' })).version, '7.1.0')
+  it('names the missing platform package instead of falling back to another TypeScript', () => {
+    const resolve = () => { throw new Error('MODULE_NOT_FOUND') }
+    assert.throws(() => nativeTsc({ resolve, platform: 'plan9', arch: 'mips' }), /@typescript\/typescript-plan9-mips is not installed/)
   })
 
-  it("refuses a pre-native TypeScript, so a consumer's TypeScript 6 never stands in", () => {
-    assert.throws(() => nativeTsc(fakeLoad({ typescript: '6.0.3' })), /found typescript@6\.0\.3/)
-    assert.throws(() => nativeTsc(fakeLoad({})), /no TypeScript 7 or newer found\./)
+  it('depends on one TypeScript 7 range for every platform and on no typescript package', () => {
+    const platforms = Object.entries(manifest.optionalDependencies)
+    assert.ok(platforms.length > 0)
+    assert.ok(platforms.every(([name]) => name.startsWith('@typescript/typescript-')))
+    assert.equal(new Set(platforms.map(([, range]) => range)).size, 1)
+    assert.match(platforms[0][1], /^\^7\./)
+    assert.ok(manifest.optionalDependencies[platformPackage()])
+    assert.equal(manifest.dependencies?.typescript, undefined)
   })
 })
