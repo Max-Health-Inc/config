@@ -1,4 +1,4 @@
-import { spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -42,23 +42,38 @@ function label(env) {
 }
 
 /**
- * `wrangler deploy --dry-run` for each environment: bundles the Worker the way a deploy would and
- * fails on a bundling error or any configuration warning. `""` is the top-level config.
+ * One wrangler run, resolved with its exit status and combined stdout and stderr.
+ * @param {string[]} args
+ * @param {string} cwd
+ * @returns {Promise<{ status: number | null, output: string }>}
+ */
+function runWrangler(args, cwd) {
+  return new Promise((resolve) => {
+    const child = spawn('npx', ['--no-install', 'wrangler', ...args], { cwd, shell: process.platform === 'win32' })
+    let output = ''
+    child.stdout.setEncoding('utf8').on('data', (chunk) => { output += chunk })
+    child.stderr.setEncoding('utf8').on('data', (chunk) => { output += chunk })
+    child.on('error', (error) => resolve({ status: null, output: `${output}${error.message}` }))
+    child.on('close', (status) => resolve({ status, output }))
+  })
+}
+
+/**
+ * `wrangler deploy --dry-run` for each environment, all at once: bundles the Worker the way a deploy
+ * would and fails on a bundling error or any configuration warning. `""` is the top-level config.
  * `wranglerArgs` go to wrangler as given, e.g. `--no-bundle` for a Worker only Vite can bundle.
- * @param {{ envs: string[], config?: string, wranglerArgs?: string[], cwd?: string, run?: (args: string[]) => { status: number | null, output: string } }} options
- * @returns {{ env: string, ok: boolean, problem?: string }[]}
+ * Results come back in the order `envs` named them.
+ * @param {{ envs: string[], config?: string, wranglerArgs?: string[], cwd?: string, run?: (args: string[]) => Promise<{ status: number | null, output: string }> | { status: number | null, output: string } }} options
+ * @returns {Promise<{ env: string, ok: boolean, problem?: string }[]>}
  */
 export function checkWrangler({ envs, config, wranglerArgs = [], cwd = process.cwd(), run }) {
-  const exec = run ?? ((args) => {
-    const result = spawnSync('npx', ['--no-install', 'wrangler', ...args], { cwd, encoding: 'utf8', shell: process.platform === 'win32' })
-    return { status: result.status, output: `${result.stdout ?? ''}${result.stderr ?? ''}` }
-  })
+  const exec = run ?? ((args) => runWrangler(args, cwd))
   const file = config ?? sourceConfig(cwd)
-  return envs.map((env) => {
+  return Promise.all(envs.map(async (env) => {
     const outdir = mkdtempSync(join(tmpdir(), 'wrangler-check-'))
     try {
       const args = ['deploy', '--dry-run', '--outdir', outdir, ...(file ? ['--config', file] : []), ...(env ? ['--env', env] : []), ...wranglerArgs]
-      const { status, output } = exec(args)
+      const { status, output } = await exec(args)
       const warnings = configWarnings(output)
       if (warnings) return { env, ok: false, problem: warnings }
       if (status !== 0) return { env, ok: false, problem: output.replace(ANSI, '').trim().split('\n').slice(-20).join('\n') }
@@ -66,7 +81,7 @@ export function checkWrangler({ envs, config, wranglerArgs = [], cwd = process.c
     } finally {
       rmSync(outdir, { recursive: true, force: true })
     }
-  })
+  }))
 }
 
 /**

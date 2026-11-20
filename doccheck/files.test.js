@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { markdownFiles } from './files.js'
+import { markdownFiles, tscScript } from './files.js'
 
 const root = mkdtempSync(path.join(tmpdir(), 'doccheck-files-'))
 after(() => rmSync(root, { recursive: true, force: true }))
@@ -34,5 +34,16 @@ describe('markdownFiles', () => {
     const found = markdownFiles(config, root)
     assert.ok(!found.some((f) => f.startsWith('.claude/')))
     assert.ok(!found.some((f) => f.startsWith('vendor-sub/')))
+  })
+})
+
+describe('tscScript', () => {
+  it("runs the repo's own typescript package, not a .bin shim", () => {
+    const manifest = path.join('/repo', 'node_modules', 'typescript', 'package.json')
+    assert.equal(tscScript('/repo', () => manifest), path.join('/repo', 'node_modules', 'typescript', 'lib', 'tsc.js'))
+  })
+
+  it('names the missing devDependency when typescript does not resolve', () => {
+    assert.throws(() => tscScript('/repo', () => { throw new Error('MODULE_NOT_FOUND') }), /Add typescript as a devDependency/)
   })
 })

@@ -40,6 +40,7 @@ your project, so it needs no peer declaration at all.
 | `vitest` | `vitest` (>=2) |
 | `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
 | `tsconfig/test-bun.json` | `@types/bun` (supplies `bun-types/test`) |
+| `tsgo` | nothing: TypeScript 7's platform binary is an optional dependency of this package (see [tsgo](#tsgo)) |
 
 A React app on Vite already has every one of these in its own `devDependencies`, so this
 is a no-op there. If one is missing the preset fails at import with a plain
@@ -339,6 +340,9 @@ export default defineConfig({
 | `vitest` | `src/**/*.test.ts` discovery, build-artifact excludes, opt-in v8 coverage and html/junit reports |
 | `tsconfig/test-bun.json`, `tsconfig/test-vitest.json` | Test projects, so `tsc -b` covers test files without a runner's globals overriding the environment's |
 | `doccheck` | CLI: badge/link rot, doc examples that must compile, API-docs coverage |
+| `tsgo` | CLI: TypeScript 7's native compiler beside a root TypeScript 6 |
+| `run-parallel` | CLI: package scripts at once, each one's output printed whole |
+| `wrangler-check` | CLI: dry-run deploy of every Worker environment, failing on config warnings |
 
 ## doccheck
 
@@ -449,6 +453,44 @@ passed with `--config` by default, so the redirect `@cloudflare/vite-plugin` lea
 it; `--config <file>` names another. Arguments after `--` go to wrangler: `-- --no-bundle` for a
 Worker only Vite can bundle, `-- --containers-rollout=none` to skip a container image build. Run it
 in CI before migrations and deploy, so a broken config fails while the database is untouched.
+
+The environments run concurrently and are reported in the order named. `checkWrangler` is async
+and resolves to one `{ env, ok, problem? }` per environment; its `run` option may return the
+`{ status, output }` of a wrangler run directly or as a promise.
+
+## tsgo
+
+TypeScript 7's native compiler, for typechecking:
+
+```json
+{ "scripts": { "typecheck": "tsgo --noEmit && tsgo --noEmit -p test" } }
+```
+
+`tsgo` takes `tsc`'s arguments and runs TypeScript 7's native executable. The root `typescript`
+stays on 6.x, because typescript-eslint loads the compiler API that 7.0 no longer ships.
+
+This package lists TypeScript 7's per-platform packages (`@typescript/typescript-<platform>-<arch>`,
+the ones `typescript@7` itself installs) as optional dependencies, so npm and bun install only the
+one matching the machine: about 28 MB on disk. It does not depend on `typescript@7`. A second
+`typescript` would install a `tsc` bin that can replace the root one, and under bun's isolated
+linker it becomes what this package's typescript-eslint peer resolves, which then throws
+"typescript-eslint does not support TS 7.0" from the ESLint presets. The platform packages carry
+no bin and are not named `typescript`, so neither can happen. If the package for the platform is
+missing (an unsupported platform, or optional dependencies omitted), `tsgo` exits naming it.
+
+## run-parallel
+
+Runs package scripts at the same time and fails if any fails:
+
+```json
+{ "scripts": { "check": "run-parallel typecheck lint test check:worker" } }
+```
+
+Each script's output is buffered and printed whole when it finishes, under a `✓ name (12.3s)` or
+`✗ name` header, so parallel steps never interleave; a summary of every script and its time ends
+the run. Scripts run with the package manager that started `run-parallel` (`npm run check` uses
+npm, `bun run check` uses bun). It prints no `::group::` lines, since CI already wraps the gate in
+one and GitHub Actions groups do not nest.
 
 ## Vitest Options
 

@@ -1,7 +1,7 @@
 {
   "name": "@max-health-inc/config",
-  "version": "4.8.2",
-  "description": "Shared configs (tsconfig, eslint, vite, vitest) and the doccheck doc-quality CLI for Max Health repos",
+  "version": "4.9.0",
+  "description": "Shared configs (tsconfig, eslint, vite, vitest), the doccheck doc-quality CLI and check tooling (tsgo, run-parallel, wrangler-check) for Max Health repos",
   "type": "module",
   "repository": {
     "type": "git",
@@ -45,7 +45,9 @@
     "doccheck": "./doccheck/cli.js",
     "release-version": "./vite/release-cli.js",
     "release-tag": "./vite/release-tag-cli.js",
-    "wrangler-check": "./wrangler/check-cli.js"
+    "wrangler-check": "./wrangler/check-cli.js",
+    "run-parallel": "./parallel/cli.js",
+    "tsgo": "./tsgo/cli.js"
   },
   "files": [
     "tsconfig",
@@ -55,12 +57,38 @@
     "vitest",
     "doccheck",
     "wrangler",
+    "parallel",
+    "tsgo",
     "!eslint/*.test.js",
     "!vite/*.test.js",
     "!wrangler/*.test.js",
-    "!doccheck/*.test.js"
+    "!doccheck/*.test.js",
+    "!parallel/*.test.js",
+    "!tsgo/*.test.js"
   ],
   "license": "MIT",
+  "optionalDependencies": {
+    "@typescript/typescript-aix-ppc64": "^7.0.2",
+    "@typescript/typescript-darwin-arm64": "^7.0.2",
+    "@typescript/typescript-darwin-x64": "^7.0.2",
+    "@typescript/typescript-freebsd-arm64": "^7.0.2",
+    "@typescript/typescript-freebsd-x64": "^7.0.2",
+    "@typescript/typescript-linux-arm": "^7.0.2",
+    "@typescript/typescript-linux-arm64": "^7.0.2",
+    "@typescript/typescript-linux-loong64": "^7.0.2",
+    "@typescript/typescript-linux-mips64el": "^7.0.2",
+    "@typescript/typescript-linux-ppc64": "^7.0.2",
+    "@typescript/typescript-linux-riscv64": "^7.0.2",
+    "@typescript/typescript-linux-s390x": "^7.0.2",
+    "@typescript/typescript-linux-x64": "^7.0.2",
+    "@typescript/typescript-netbsd-arm64": "^7.0.2",
+    "@typescript/typescript-netbsd-x64": "^7.0.2",
+    "@typescript/typescript-openbsd-arm64": "^7.0.2",
+    "@typescript/typescript-openbsd-x64": "^7.0.2",
+    "@typescript/typescript-sunos-x64": "^7.0.2",
+    "@typescript/typescript-win32-arm64": "^7.0.2",
+    "@typescript/typescript-win32-x64": "^7.0.2"
+  },
   "peerDependencies": {
     "@eslint/js": ">=9",
     "eslint": ">=9",
@@ -72,6 +100,6 @@
     "vite": "^8.3.5"
   },
   "scripts": {
-    "test": "node --test \"vite/*.test.js\" \"eslint/*.test.js\" \"wrangler/*.test.js\" \"doccheck/*.test.js\""
+    "test": "node --test \"vite/*.test.js\" \"eslint/*.test.js\" \"wrangler/*.test.js\" \"doccheck/*.test.js\" \"parallel/*.test.js\" \"tsgo/*.test.js\""
   }
 }
