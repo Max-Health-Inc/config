@@ -25,11 +25,23 @@ describe('wrangler-check', () => {
     assert.equal(configWarnings(' ⛅️ wrangler 4.145.0\nTotal Upload: 812.40 KiB\n--dry-run: exiting now.'), null)
   })
 
-  it('fails each environment on a warning or a bundling error, and names it', () => {
+  it('fails each environment on a warning or a bundling error, and names it', async () => {
     const outputs = { '': { status: 0, output: 'Total Upload: 1 KiB' }, beta: { status: 0, output: MISPLACED }, prod: { status: 1, output: 'X [ERROR] Could not resolve "@max-health-inc/types/company"' } }
-    const results = checkWrangler({ envs: ['', 'beta', 'prod'], run: (args) => outputs[args.includes('--env') ? args[args.indexOf('--env') + 1] : ''] })
+    const results = await checkWrangler({ envs: ['', 'beta', 'prod'], run: (args) => outputs[args.includes('--env') ? args[args.indexOf('--env') + 1] : ''] })
     assert.deepEqual(results.map((r) => [r.env, r.ok]), [['', true], ['beta', false], ['prod', false]])
     assert.match(results[2].problem ?? '', /Could not resolve/)
+  })
+
+  it('runs every environment at once and keeps the order they were named in', async () => {
+    const started = []
+    const release = []
+    const pending = checkWrangler({ envs: ['', 'beta', 'prod'], run: (args) => {
+      started.push(args.includes('--env') ? args[args.indexOf('--env') + 1] : '')
+      return new Promise((resolve) => release.push(() => resolve({ status: 0, output: '' })))
+    } })
+    assert.deepEqual(started, ['', 'beta', 'prod'])
+    release.reverse().forEach((done) => done())
+    assert.deepEqual((await pending).map((r) => r.env), ['', 'beta', 'prod'])
   })
 
   it('checks every environment named, the top level included', () => {
@@ -39,10 +51,10 @@ describe('wrangler-check', () => {
     assert.deepEqual(parseCheckArgs([]), { envs: [''], wranglerArgs: [] })
   })
 
-  it('hands everything after -- to wrangler, so a Vite-built or container Worker can still be checked', () => {
+  it('hands everything after -- to wrangler, so a Vite-built or container Worker can still be checked', async () => {
     assert.deepEqual(parseCheckArgs(['top', 'beta', '--', '--no-bundle']), { envs: ['', 'beta'], wranglerArgs: ['--no-bundle'] })
     const seen = []
-    checkWrangler({ envs: ['beta'], config: 'wrangler.jsonc', wranglerArgs: ['--containers-rollout=none'], run: (args) => { seen.push(args); return { status: 0, output: '' } } })
+    await checkWrangler({ envs: ['beta'], config: 'wrangler.jsonc', wranglerArgs: ['--containers-rollout=none'], run: (args) => { seen.push(args); return { status: 0, output: '' } } })
     assert.deepEqual(seen[0].slice(-5), ['--config', 'wrangler.jsonc', '--env', 'beta', '--containers-rollout=none'])
   })
 

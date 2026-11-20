@@ -30,7 +30,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { ROOT, markdownFiles, tscBin } from './files.js';
+import { ROOT, markdownFiles, tscScript } from './files.js';
 import { exportsOf } from './symbols.js';
 
 /**
@@ -249,7 +249,7 @@ function parseDiags(output) {
 
 function runTsc(WORK) {
   try {
-    return execFileSync(tscBin(ROOT), ['-p', 'tsconfig.json'], { cwd: WORK, encoding: 'utf8', stdio: 'pipe' });
+    return execFileSync(process.execPath, [tscScript(ROOT), '-p', 'tsconfig.json'], { cwd: WORK, encoding: 'utf8', stdio: 'pipe' });
   } catch (err) {
     return `${err.stdout ?? ''}${err.stderr ?? ''}`;
   }

@@ -8,6 +8,7 @@
  */
 
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 
 export const ROOT = process.cwd()
@@ -74,10 +75,17 @@ export function lineOf(source, index) {
   return source.slice(0, index).split(/\r?\n/).length
 }
 
-/** The consumer's own tsc, since the compile must match what the repo builds with. */
-export function tscBin(root = ROOT) {
-  const name = process.platform === 'win32' ? 'tsc.exe' : 'tsc'
-  const local = path.join(root, 'node_modules', '.bin', name)
-  if (fs.existsSync(local)) return local
-  throw new Error('doccheck: no typescript in node_modules/.bin. Add typescript as a devDependency.')
+/**
+ * The consumer's own `typescript/lib/tsc.js`, run with Node, since the compile must match what the
+ * repo builds with. Resolving the package rather than a `.bin` shim works for npm's `.cmd` shims on
+ * Windows as for bun's `.exe` ones.
+ */
+export function tscScript(root = ROOT, resolve = createRequire(path.join(root, 'package.json')).resolve) {
+  let manifest
+  try {
+    manifest = resolve('typescript/package.json')
+  } catch {
+    throw new Error('doccheck: typescript does not resolve from the repo root. Add typescript as a devDependency.')
+  }
+  return path.join(path.dirname(manifest), 'lib', 'tsc.js')
 }

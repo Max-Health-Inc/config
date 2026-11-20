@@ -3,7 +3,7 @@
 import { checkWrangler, envLabel, parseCheckArgs } from './check.js'
 
 const { envs, config, wranglerArgs } = parseCheckArgs(process.argv.slice(2))
-const results = checkWrangler({ envs, config, wranglerArgs })
+const results = await checkWrangler({ envs, config, wranglerArgs })
 for (const result of results) {
   console.log(`${result.ok ? '✓' : '✗'} wrangler ${envLabel(result.env)}`)
   if (result.problem) console.error(`${result.problem}\n`)
