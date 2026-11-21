@@ -37,6 +37,7 @@ your project, so it needs no peer declaration at all.
 | `eslint/react` (additionally) | `eslint-plugin-react-hooks` (>=5), `eslint-plugin-react-refresh` (>=0.4) |
 | `eslint/react` with `a11y` | `eslint-plugin-jsx-a11y-x` (>=0.2) |
 | `vite` | `vite`, plus `@vitejs/plugin-react` (>=6) **or** `@vitejs/plugin-react-swc` (>=4), resolved from your project's own dependencies. The preset uses `plugin-react` when installed, else the SWC plugin, and otherwise fails naming both |
+| `vite/mcp-app` | `vite` and `vite-plugin-singlefile` (>=2.3), resolved from your project's own dependencies. `freshness` and the other manifest helpers need neither |
 | `vitest` | `vitest` (>=2) |
 | `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
 | `tsconfig/test-bun.json` | `@types/bun` (supplies `bun-types/test`) |
@@ -263,6 +264,51 @@ export default createViteConfig({
 })
 ```
 
+### MCP App widgets (`vite/mcp-app`)
+
+An MCP App is one HTML document a server hands to the host as a `text/html;profile=mcp-app`
+resource. `mcpAppConfig` builds the app in `root` into a single self-contained `index.html`
+with `vite-plugin-singlefile`, as the `modelcontextprotocol/ext-apps` examples do, and writes
+`inputs.json` beside it: every project file the build read, plus `extraInputs`, with a SHA-256
+over their contents. That hash replaces `%MCP_APP_BUILD%` in `index.html`, so the page and the
+server can name the build they carry.
+
+**viewer/vite.config.ts:**
+```ts
+import { join } from 'node:path'
+import { defineConfig } from 'vite'
+import { mcpAppConfig } from '@max-health-inc/config/vite/mcp-app'
+
+export default defineConfig(mcpAppConfig({
+  root: import.meta.dirname,
+  projectRoot: join(import.meta.dirname, '..'),
+  outDir: join(import.meta.dirname, 'dist'),
+  extraInputs: ['package-lock.json', 'viewer/vite.config.ts', 'viewer/index.html'],
+}))
+```
+
+```html
+<meta name="mcp-app-build" content="%MCP_APP_BUILD%" />
+```
+
+`freshness(projectRoot, outDir)` hashes the listed files again and answers `fresh`, `stale`
+(an input changed) or `missing` (no bundle, or an unreadable manifest). A build script can skip
+an unchanged bundle with it and a test can fail on a stale committed one; it only reads files,
+so it loads neither Vite nor the plugin:
+
+```ts
+import { join } from 'node:path'
+import { freshness } from '@max-health-inc/config/vite/mcp-app'
+
+const root = join(import.meta.dirname, '..')
+if (freshness(root, join(root, 'viewer', 'dist')) !== 'fresh') throw new Error('run the viewer build')
+```
+
+Dependencies under `node_modules` are not listed one by one: put your lockfile in
+`extraInputs` so an upgrade marks the bundle stale. `plugins` run before the single-file
+plugin, `singleFile` is merged over `{ removeViteModuleLoader: true }` and `build` over the
+preset's build options (minified, no sourcemap, `es2022`, empty `outDir`).
+
 ### Vitest
 
 **vitest.config.ts** — a leaf package needs only its test globs:
@@ -337,6 +383,7 @@ export default defineConfig({
 | `eslint/react` | typescript-eslint recommended + reactHooks + reactRefresh + type-checked rules + consistent-type-imports |
 | `eslint/node` | typescript-eslint recommended + type-checked rules + consistent-type-imports |
 | `vite` | `@vitejs/plugin-react` (Oxc via Rolldown, no Babel) or, for an SWC-only app, `@vitejs/plugin-react-swc`; `@` alias, VITE_PROXY_BASE/VITE_BASE env support |
+| `vite/mcp-app` | Single-file MCP App build via `vite-plugin-singlefile`, an input manifest with a content hash as build id, and a `freshness` check |
 | `vitest` | `src/**/*.test.ts` discovery, build-artifact excludes, opt-in v8 coverage and html/junit reports |
 | `tsconfig/test-bun.json`, `tsconfig/test-vitest.json` | Test projects, so `tsc -b` covers test files without a runner's globals overriding the environment's |
 | `doccheck` | CLI: badge/link rot, doc examples that must compile, API-docs coverage |

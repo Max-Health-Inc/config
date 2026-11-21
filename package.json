@@ -1,6 +1,6 @@
 {
   "name": "@max-health-inc/config",
-  "version": "4.9.0",
+  "version": "4.10.0",
   "description": "Shared configs (tsconfig, eslint, vite, vitest), the doccheck doc-quality CLI and check tooling (tsgo, run-parallel, wrangler-check) for Max Health repos",
   "type": "module",
   "repository": {
@@ -27,6 +27,10 @@
     "./vite/release": {
       "types": "./vite/release.d.ts",
       "default": "./vite/release.js"
+    },
+    "./vite/mcp-app": {
+      "types": "./vite/mcp-app.d.ts",
+      "default": "./vite/mcp-app.js"
     },
     "./vite/release-notes": {
       "types": "./vite/release-notes.d.ts",
@@ -97,7 +101,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vite-plugin-singlefile": "^2.3.4"
   },
   "scripts": {
     "test": "node --test \"vite/*.test.js\" \"eslint/*.test.js\" \"wrangler/*.test.js\" \"doccheck/*.test.js\" \"parallel/*.test.js\" \"tsgo/*.test.js\""

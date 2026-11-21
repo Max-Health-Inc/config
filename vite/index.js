@@ -1,18 +1,7 @@
 import path from 'path'
-import { createRequire } from 'module'
-import { pathToFileURL } from 'url'
+import { fromProject, isMissing } from './project.js'
 
 const REACT_PLUGINS = ['@vitejs/plugin-react', '@vitejs/plugin-react-swc']
-
-function isMissing(error, name) {
-  const notFound = error?.code === 'ERR_MODULE_NOT_FOUND' || error?.code === 'MODULE_NOT_FOUND'
-  return notFound && String(error.message).includes(`'${name}'`)
-}
-
-function fromProject(name) {
-  const require = createRequire(path.join(process.cwd(), 'package.json'))
-  return import(pathToFileURL(require.resolve(name)).href)
-}
 
 export async function loadReactPlugin(load = fromProject) {
   for (const name of REACT_PLUGINS) {
