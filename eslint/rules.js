@@ -33,11 +33,19 @@ export const sharedRules = {
   ...bestPracticeRules,
 }
 
-// ── Type-checked rules (catches async bugs) ─────────────────
+// ── Type-checked rules (async bugs, and `any` leaking in) ───
+// The no-unsafe rules catch the `any` that `JSON.parse` and `Response.json()` return before it
+// reaches typed code: parse it with a schema instead.
 export const typeCheckedRules = {
   '@typescript-eslint/no-floating-promises': 'error',
   '@typescript-eslint/await-thenable': 'error',
   '@typescript-eslint/no-misused-promises': 'error',
+  '@typescript-eslint/no-unsafe-assignment': 'error',
+  '@typescript-eslint/no-unsafe-member-access': 'error',
+  '@typescript-eslint/no-unsafe-argument': 'error',
+  '@typescript-eslint/no-unsafe-call': 'error',
+  '@typescript-eslint/no-unsafe-return': 'error',
+  '@typescript-eslint/no-unnecessary-type-assertion': 'error',
 }
 
 // ── Security rules (backend packages) ───────────────────────
@@ -50,6 +58,7 @@ export const securityRules = {
 // ── Strict rules (opt-in) ───────────────────────────────────
 export const strictRules = {
   '@typescript-eslint/no-non-null-assertion': 'error',
+  '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
   '@typescript-eslint/no-empty-object-type': 'error',
   'object-shorthand': ['error', 'always'],
   'prefer-template': 'warn',

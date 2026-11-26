@@ -58,3 +58,19 @@ test('adds the strict rule set to source and test files when strict is set', () 
   }
   assert.equal(effectiveRule(createNodeConfig({ typeChecked: false }), 'src/**/*.ts', 'object-shorthand'), undefined)
 })
+
+const UNSAFE_RULES = ['no-unsafe-assignment', 'no-unsafe-member-access', 'no-unsafe-argument', 'no-unsafe-call', 'no-unsafe-return']
+
+test('keeps an any from JSON.parse or a response body out of typed code', () => {
+  const typed = createNodeConfig({ tests: true, testTsconfig: './tsconfig.test.json' })
+  for (const glob of ['src/**/*.ts', 'test/**/*.ts']) {
+    for (const rule of UNSAFE_RULES) assert.equal(effectiveRule(typed, glob, `@typescript-eslint/${rule}`), 'error')
+  }
+  const untypedTests = createNodeConfig({ tests: true })
+  for (const rule of UNSAFE_RULES) assert.equal(effectiveRule(untypedTests, 'test/**/*.ts', `@typescript-eslint/${rule}`), 'off')
+})
+
+test('bans type assertions under strict, which still lets as const through', () => {
+  const config = createNodeConfig({ typeChecked: false, strict: true })
+  assert.deepEqual(effectiveRule(config, 'src/**/*.ts', '@typescript-eslint/consistent-type-assertions'), ['error', { assertionStyle: 'never' }])
+})
