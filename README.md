@@ -330,9 +330,9 @@ export default defineConfig({
 
 | Config | Key settings |
 |--------|-------------|
-| `tsconfig/app.json` | ES2023, bundler resolution, strict, react-jsx, verbatimModuleSyntax, erasableSyntaxOnly, noUncheckedIndexedAccess, `types: ["vite/client"]` |
-| `tsconfig/node.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, `types: ["node"]` |
-| `tsconfig/worker.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, noUncheckedIndexedAccess, `types: ["@cloudflare/workers-types"]` (no DOM) |
+| `tsconfig/app.json` | ES2023, bundler resolution, strict, react-jsx, verbatimModuleSyntax, erasableSyntaxOnly, noUncheckedIndexedAccess, exactOptionalPropertyTypes, `types: ["vite/client"]` |
+| `tsconfig/node.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, noUncheckedIndexedAccess, exactOptionalPropertyTypes, `types: ["node"]` |
+| `tsconfig/worker.json` | ES2023, bundler resolution, strict, erasableSyntaxOnly, noUncheckedIndexedAccess, exactOptionalPropertyTypes, `types: ["@cloudflare/workers-types"]` (no DOM) |
 | `tsconfig/library.json` | ES2022 target, ES2023 lib, bundler resolution, strict, noUncheckedIndexedAccess, exactOptionalPropertyTypes, noImplicitOverride, declaration; no `types` |
 | `eslint/react` | typescript-eslint recommended + reactHooks + reactRefresh + type-checked rules + consistent-type-imports |
 | `eslint/node` | typescript-eslint recommended + type-checked rules + consistent-type-imports |
@@ -512,9 +512,9 @@ one and GitHub Actions groups do not nest.
 | Option | Default | Description |
 |--------|---------|-------------|
 | `tsconfigRootDir` | — | Root dir for tsconfig resolution |
-| `typeChecked` | `true` | Enable `no-floating-promises`, `await-thenable`, `no-misused-promises` |
+| `typeChecked` | `true` | Enable `no-floating-promises`, `await-thenable`, `no-misused-promises`, the `no-unsafe-*` rules and `no-unnecessary-type-assertion` |
 | `security` | `false` | Enable `no-eval`, `no-implied-eval`, `no-new-func` |
-| `strict` | `false` | Enable `no-non-null-assertion`, `no-empty-object-type`, `object-shorthand`, `prefer-template` |
+| `strict` | `false` | Enable `no-non-null-assertion`, `consistent-type-assertions` (no `as` casts; `as const` stays allowed), `no-empty-object-type`, `object-shorthand`, `prefer-template` |
 | `ignores` | `[]` | Additional ignore patterns |
 | `extraRules` | `{}` | Additional rules to merge |
 | `tests` | `false` | Lint test files. Opt-in: consumers pin caret ranges and CI installs with `--no-frozen-lockfile`, so linting tests by default would redden a repo on an unrelated PR |
@@ -539,11 +539,35 @@ one and GitHub Actions groups do not nest.
 - `@typescript-eslint/no-floating-promises` (error)
 - `@typescript-eslint/await-thenable` (error)
 - `@typescript-eslint/no-misused-promises` (error)
+- `@typescript-eslint/no-unsafe-assignment`, `no-unsafe-member-access`, `no-unsafe-argument`, `no-unsafe-call`, `no-unsafe-return` (error): an `any` from `JSON.parse` or `Response.json()` has to be parsed with a schema before typed code uses it
+- `@typescript-eslint/no-unnecessary-type-assertion` (error)
+
+### Strict (opt-in, default: off)
+- `@typescript-eslint/no-non-null-assertion` (error)
+- `@typescript-eslint/consistent-type-assertions` (error, `assertionStyle: 'never'`): no `as` casts; `as const` is still allowed
+- `@typescript-eslint/no-empty-object-type` (error)
+- `object-shorthand` (error), `prefer-template` (warn)
 
 ### Security (opt-in, default: off)
 - `no-eval` (error)
 - `no-implied-eval` (error)
 - `no-new-func` (error)
+
+## Migration to v5 (stricter type safety)
+
+v5 checks types where v4 trusted them. Nothing changes until a repo moves its range to `^5`;
+expect errors to fix on the first run, which is why this is a major.
+
+- **tsconfig:** `app`, `node` and `worker` turn on `exactOptionalPropertyTypes`, as `library`
+  already did. An optional property no longer accepts `undefined` unless its type says
+  `| undefined`; leave the key out instead, or widen the type where `undefined` is meant.
+- **Type-checked lint:** the `no-unsafe-*` rules reject using an `any`. Parse what
+  `JSON.parse`, `Response.json()` or a database driver returns with a schema (Zod's
+  `schema.parse`) rather than passing it on. `no-unnecessary-type-assertion` removes casts
+  the types already guarantee.
+- **Strict lint:** repos with `strict: true` also lose `as` casts
+  (`consistent-type-assertions: never`). Replace each with a schema parse, a type guard or
+  a correctly typed value; `as const` is unaffected.
 
 ## Migration to v3 (package renamed)
 
