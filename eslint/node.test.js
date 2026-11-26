@@ -74,3 +74,9 @@ test('bans type assertions under strict, which still lets as const through', () 
   const config = createNodeConfig({ typeChecked: false, strict: true })
   assert.deepEqual(effectiveRule(config, 'src/**/*.ts', '@typescript-eslint/consistent-type-assertions'), ['error', { assertionStyle: 'never' }])
 })
+
+test('builds no test project when type-checked rules are off, so the parser does no type work for nothing', () => {
+  const block = testBlock(createNodeConfig({ typeChecked: false, tests: true, testTsconfig: './tsconfig.test.json' }))
+  assert.equal(block.languageOptions.parserOptions.project, false)
+  assert.notEqual(block.rules['@typescript-eslint/await-thenable'], 'error')
+})
