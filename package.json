@@ -31,6 +31,10 @@
       "types": "./vite/release.d.ts",
       "default": "./vite/release.js"
     },
+    "./vite/mcp-app": {
+      "types": "./vite/mcp-app.d.ts",
+      "default": "./vite/mcp-app.js"
+    },
     "./vite/release-notes": {
       "types": "./vite/release-notes.d.ts",
       "default": "./vite/release-notes.js"
@@ -103,7 +107,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.1.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.5",
+    "vite-plugin-singlefile": "^2.3.4"
   },
   "scripts": {
     "generate": "node oxlint/generate.js",

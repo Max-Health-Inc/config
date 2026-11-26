@@ -23,7 +23,7 @@ const swc = () => ({ name: 'swc' })
 
 describe('package.json', () => {
   it('declares no vite tooling as a peer, because GitHub Packages drops peerDependenciesMeta and npm then installs every peer', () => {
-    for (const name of ['vite', '@vitejs/plugin-react', '@vitejs/plugin-react-swc', '@swc/core']) {
+    for (const name of ['vite', 'vite-plugin-singlefile', '@vitejs/plugin-react', '@vitejs/plugin-react-swc', '@swc/core']) {
       assert.equal(manifest.peerDependencies?.[name], undefined, `${name} is a peer dependency`)
     }
     assert.equal(manifest.peerDependenciesMeta, undefined)
