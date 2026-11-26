@@ -25,6 +25,7 @@
 
     /* Stricter (from tsconfig/bases strictest) */
     "noImplicitOverride": true,
-    "noUncheckedIndexedAccess": true
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true
   }
 }
