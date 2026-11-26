@@ -1,6 +1,6 @@
 {
   "name": "@max-health-inc/config",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "description": "Shared configs (tsconfig, eslint, vite, vitest), the doccheck doc-quality CLI and check tooling (tsgo, run-parallel, wrangler-check) for Max Health repos",
   "type": "module",
   "repository": {
@@ -20,6 +20,9 @@
     "./eslint/react": "./eslint/react.js",
     "./eslint/node": "./eslint/node.js",
     "./eslint/rules": "./eslint/rules.js",
+    "./oxlint/type-aware.json": "./oxlint/type-aware.json",
+    "./oxlint/type-aware-bun.json": "./oxlint/type-aware-bun.json",
+    "./oxlint/config": "./oxlint/config.js",
     "./vite": {
       "types": "./vite/index.d.ts",
       "default": "./vite/index.js"
@@ -53,6 +56,7 @@
     "tsconfig",
     "types",
     "eslint",
+    "oxlint",
     "vite",
     "vitest",
     "doccheck",
@@ -60,6 +64,8 @@
     "parallel",
     "tsgo",
     "!eslint/*.test.js",
+    "!oxlint/*.test.js",
+    "!oxlint/generate.js",
     "!vite/*.test.js",
     "!wrangler/*.test.js",
     "!doccheck/*.test.js",
@@ -100,6 +106,7 @@
     "vite": "^8.3.5"
   },
   "scripts": {
-    "test": "node --test \"vite/*.test.js\" \"eslint/*.test.js\" \"wrangler/*.test.js\" \"doccheck/*.test.js\" \"parallel/*.test.js\" \"tsgo/*.test.js\""
+    "generate": "node oxlint/generate.js",
+    "test": "node --test \"vite/*.test.js\" \"eslint/*.test.js\" \"oxlint/*.test.js\" \"wrangler/*.test.js\" \"doccheck/*.test.js\" \"parallel/*.test.js\" \"tsgo/*.test.js\""
   }
 }

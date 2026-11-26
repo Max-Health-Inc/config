@@ -1,0 +1,42 @@
+{
+  "categories": {
+    "correctness": "off"
+  },
+  "plugins": [
+    "typescript"
+  ],
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-argument": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-return": "error",
+    "typescript/no-unnecessary-type-assertion": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "test/**",
+        "**/*.test.*"
+      ],
+      "rules": {
+        "typescript/await-thenable": "off",
+        "typescript/no-floating-promises": [
+          "error",
+          {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "package",
+                "package": "bun:test",
+                "name": "module"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

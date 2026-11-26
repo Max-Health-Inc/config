@@ -47,9 +47,9 @@ export function testFilesConfig({ files, globals, tsconfigRootDir, testTsconfig,
   const typed = Boolean(typeChecked && testTsconfig)
   return {
     files,
-    extends: [...recommended, ...(testTsconfig ? [] : [tseslint.configs.disableTypeChecked])],
+    extends: [...recommended, ...(typed ? [] : [tseslint.configs.disableTypeChecked])],
     rules: composeRules({ typeChecked: typed, security, strict, extraRules, bunTests: testRunner === 'bun' }),
-    languageOptions: languageOptions({ globals, tsconfigRootDir, project: testTsconfig ?? false }),
+    languageOptions: languageOptions({ globals, tsconfigRootDir, project: typed ? testTsconfig : false }),
   }
 }
 

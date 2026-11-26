@@ -36,6 +36,7 @@ your project, so it needs no peer declaration at all.
 | `eslint/node`, `eslint/react`, `eslint/rules` | `eslint`, `@eslint/js`, `globals`, `typescript-eslint` — **declared as peers**, installed for you |
 | `eslint/react` (additionally) | `eslint-plugin-react-hooks` (>=5), `eslint-plugin-react-refresh` (>=0.4) |
 | `eslint/react` with `a11y` | `eslint-plugin-jsx-a11y-x` (>=0.2) |
+| `oxlint/type-aware*.json` | `oxlint` (>=1.95), `oxlint-tsgolint` (>=7), install them yourself: not peers, since GitHub Packages drops `peerDependenciesMeta` |
 | `vite` | `vite`, plus `@vitejs/plugin-react` (>=6) **or** `@vitejs/plugin-react-swc` (>=4), resolved from your project's own dependencies. The preset uses `plugin-react` when installed, else the SWC plugin, and otherwise fails naming both |
 | `vitest` | `vitest` (>=2) |
 | `tsconfig/*` | nothing (`tsconfig/worker.json` wants `@cloudflare/workers-types`) |
@@ -227,6 +228,41 @@ export default createNodeConfig({
   typeChecked: false,
 })
 ```
+
+**Type-checked rules on Oxlint (much faster):**
+
+typescript-eslint type-checks with the JavaScript TypeScript 6 compiler, so the type-checked
+rules cost about as much as a full `tsc` run, once per tsconfig the files belong to. Oxlint's
+tsgolint runs the same rules on TypeScript 7. `oxlint/type-aware.json` is generated from
+`typeCheckedRules` (`npm run generate`; a test fails when it is stale), and
+`oxlint/type-aware-bun.json` adds the `bunTestRules` relaxations for `test/**` and `*.test.*`.
+
+```sh
+npm i -D oxlint oxlint-tsgolint
+```
+
+`.oxlintrc.json`:
+```json
+{ "extends": ["./node_modules/@max-health-inc/config/oxlint/type-aware.json"] }
+```
+
+```js
+export default createNodeConfig({
+  tsconfigRootDir: __dirname,
+  typeChecked: false,
+  tests: true,
+})
+```
+
+```json
+"lint": "oxlint --type-aware --deny-warnings src/ test/ && eslint --cache --cache-strategy content --cache-location .cache/eslint/ src/ test/"
+```
+
+Oxlint finds the nearest tsconfig per file, so tests and app code get their own projects
+without `testTsconfig`. With `typeChecked: false` the presets build no TypeScript program at
+all, also for tests that name a `testTsconfig`. Keep the cache outside `node_modules` (which
+`npm ci` deletes) and on the `content` strategy (checkouts reset file timestamps). Measured on
+a 700-file Worker repo: cold lint 84 s down to 17 s, warm 5.5 s.
 
 **Linting test files (opt-in):**
 ```js
